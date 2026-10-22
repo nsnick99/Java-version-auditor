@@ -1,6 +1,7 @@
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -73,6 +74,81 @@ class VersionAuditorTests(unittest.TestCase):
             self.assertEqual(libraries["sample-library"]["version"], "4.5.6")
             self.assertEqual(libraries["sample-library"]["version_source"], "dependency_management")
             self.assertEqual(libraries["other-library"]["version"], "1.2.3")
+
+    def test_latest_maven_version_prefers_stable_release_metadata(self):
+        metadata = b"""<metadata><groupId>org.example</groupId><artifactId>lib</artifactId>
+        <versioning><latest>3.0.0-RC1</latest><release>2.7.5</release>
+        <versions><version>2.7.5</version><version>3.0.0-RC1</version></versions>
+        </versioning></metadata>"""
+        with patch.object(auditor, "http_bytes", return_value=metadata):
+            result = auditor.latest_maven_version("org.example", "lib")
+        self.assertEqual(result["status"], "FOUND")
+        self.assertEqual(result["version"], "2.7.5")
+
+    def test_lifecycle_status_distinguishes_extended_support(self):
+        product = {
+            "status": "FOUND",
+            "url": "https://endoflife.date/api/v1/products/spring-boot",
+            "result": {
+                "links": {"html": "https://endoflife.date/spring-boot"},
+                "labels": {"eol": "OSS support", "eoes": "Commercial Support"},
+                "releases": [{
+                    "name": "2.7",
+                    "isEol": True,
+                    "isEoes": False,
+                    "isMaintained": True,
+                    "eolFrom": "2023-06-30",
+                    "eoesFrom": "2029-06-30",
+                    "latest": {"name": "2.7.18", "date": "2023-11-23"},
+                }],
+            },
+        }
+        result = auditor.lifecycle_status(product, "spring-boot", "2.7.5")
+        self.assertEqual(result["status"], "OSS_SUPPORT_ENDED_EXTENDED_SUPPORT_AVAILABLE")
+        self.assertEqual(result["latest_in_cycle"], "2.7.18")
+
+    def test_osv_vulnerability_response_is_normalized(self):
+        class FakeResponse:
+            def __init__(self, payload):
+                self.payload = payload
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+            def read(self):
+                return self.payload
+
+        vulnerability = {
+            "id": "GHSA-TEST-0000",
+            "aliases": ["CVE-2025-0000"],
+            "summary": "A test vulnerability",
+            "database_specific": {"severity": "HIGH"},
+            "affected": [{
+                "package": {"ecosystem": "Maven", "name": "org.example:lib"},
+                "ranges": [{"events": [{"introduced": "0"}, {"fixed": "1.0.1"}]}],
+            }],
+            "references": [{"url": "https://example.com/advisory"}],
+        }
+
+        def fake_urlopen(request, timeout=8):
+            url = request.full_url if hasattr(request, "full_url") else str(request)
+            if url.endswith("/v1/querybatch"):
+                return FakeResponse(b'{"results":[{"vulns":[{"id":"GHSA-TEST-0000"}]}]}')
+            if url.endswith("/v1/vulns/GHSA-TEST-0000"):
+                import json
+                return FakeResponse(json.dumps(vulnerability).encode("utf-8"))
+            raise AssertionError("Unexpected URL: " + url)
+
+        item = {"group_id": "org.example", "artifact_id": "lib", "version": "1.0.0"}
+        with patch.object(auditor.urllib.request, "urlopen", side_effect=fake_urlopen):
+            result = auditor.osv_query_batch([item])
+        finding = result["findings"][("org.example", "lib", "1.0.0")]
+        self.assertEqual(finding["status"], "VULNERABLE")
+        self.assertEqual(finding["vulnerabilities"][0]["severity"], "HIGH")
+        self.assertEqual(finding["vulnerabilities"][0]["fixed_versions"], ["1.0.1"])
 
     def test_known_maintenance_advisory(self):
         result = auditor.known_deprecation({
