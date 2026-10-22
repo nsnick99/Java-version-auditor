@@ -26,3 +26,19 @@ The JSON report contains the detected build system, discovered modules, Java ver
 ## Current scope
 
 This is intentionally separate from the VB.NET analyzer. The MVP does **not** analyze individual dependency versions, source-code structure, or migration blockers. It focuses on build detection and Java/Spring Boot version inventory.
+
+## Direct CLI
+
+You can also run the analyzer directly:
+
+```bash
+python auditor.py /path/to/java-project
+```
+
+Prints the JSON report to the terminal. To save it to a file:
+
+```bash
+python auditor.py /path/to/java-project --output audit-report.json
+```
+
+The `main.py` command remains available for a short summary plus a saved JSON report.
