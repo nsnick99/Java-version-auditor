@@ -685,7 +685,7 @@ def resolve_maven_tree(folder, timeout=120):
     """Resolve Maven's dependency tree only when the user explicitly requests --resolve."""
     if not (folder / "pom.xml").is_file():
         return {"status": "NOT_APPLICABLE", "components": [], "message": "No pom.xml"}
-    command = ["mvn", "-q", "dependency:tree", "-DoutputType=text", "-Dstyle.color=never"]
+    command = ["mvn", "dependency:tree", "-DoutputType=text", "-Dstyle.color=never"]
     try:
         proc = subprocess.run(
             command, cwd=str(folder), capture_output=True, text=True,
@@ -933,7 +933,7 @@ def lifecycle_status(product_data, product, version):
     eol = release.get("isEol")
     eoes = release.get("isEoes")
     maintained = release.get("isMaintained")
-    if eol is True and eoes is True:
+    if eol is True and eoes is False and release.get("eoesFrom"):
         status = "OSS_SUPPORT_ENDED_EXTENDED_SUPPORT_AVAILABLE"
     elif eol is True:
         status = "EOL"
@@ -1170,6 +1170,8 @@ def enrich_report(report, online=True):
             and item.get("latest_lookup_supported") is not False
             and item.get("group_id") not in {"unknown", "gradle.plugin"}
         })
+        if any(module["spring_boot"].get("version") for module in report["modules"]):
+            latest_keys = sorted(set(latest_keys) | {("org.springframework.boot", "spring-boot-starter-parent")})
         with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
             futures = {
                 pool.submit(latest_maven_version, group, artifact): (group, artifact)
@@ -1357,7 +1359,7 @@ def enrich_report(report, online=True):
         "dependency_resolution_requested": report.get("dependency_resolution_requested", False),
     }
     report["version_intelligence"] = {
-        "status": "COMPLETE" if online and osv_result.get("status") == "COMPLETE" else ("PARTIAL" if online else "SKIPPED"),
+        "status": "COMPLETE" if online and osv_result.get("status") in {"COMPLETE", "NO_VERSIONED_COMPONENTS"} else ("PARTIAL" if online else "SKIPPED"),
         "checked_at": now_utc() if online else None,
         "latest_version_source": "Maven Central metadata",
         "vulnerability_source": "OSV.dev",
