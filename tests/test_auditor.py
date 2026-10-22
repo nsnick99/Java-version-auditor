@@ -48,7 +48,7 @@ class VersionAuditorTests(unittest.TestCase):
                       <dependency>
                         <groupId>org.example</groupId>
                         <artifactId>sample-library</artifactId>
-                        <version>${"$"}{sample.library.version}</version>
+                        <version>${sample.library.version}</version>
                       </dependency>
                     </dependencies>
                   </dependencyManagement>
