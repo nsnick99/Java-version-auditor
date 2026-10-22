@@ -1,6 +1,6 @@
 # Java Version Auditor
 
-Standalone MVP for auditing a Java project's **build system, Java version, and Spring Boot version per module**.
+Standalone analyzer for auditing a Java project's **build system, Java/Spring Boot versions, declared dependencies, and dependency version conflicts per module**.
 
 ## Supported build systems
 - Maven: `pom.xml`
@@ -19,26 +19,30 @@ Or choose the report path:
 python main.py /path/to/java-project --output audit-report.json
 ```
 
-## Output
-
-The JSON report contains the detected build system, discovered modules, Java version, Spring Boot version, evidence for each detection, conflicts, and version variations across modules.
-
-## Current scope
-
-This is intentionally separate from the VB.NET analyzer. The MVP does **not** analyze individual dependency versions, source-code structure, or migration blockers. It focuses on build detection and Java/Spring Boot version inventory.
-
-## Direct CLI
-
 You can also run the analyzer directly:
 
 ```bash
 python auditor.py /path/to/java-project
 ```
 
-Prints the JSON report to the terminal. To save it to a file:
+## Current analysis
 
-```bash
-python auditor.py /path/to/java-project --output audit-report.json
-```
+The analyzer currently detects:
 
-The `main.py` command remains available for a short summary plus a saved JSON report.
+- Build system and build files
+- Java version with evidence
+- Spring Boot version with evidence
+- Modules in multi-module projects
+- Declared Maven dependencies and their versions
+- Basic Gradle dependency declarations and their versions
+- Dependencies whose versions are inherited/managed rather than declared directly
+- Dependency version conflicts across detected modules
+- Java/Spring Boot version variations across modules
+
+For Maven, versions managed by the Spring Boot parent or other dependency management are intentionally reported as `managed_or_transitive` when the dependency itself has no `<version>`.
+
+## Scope
+
+This project is a **Java Version Auditor**, not a migration-readiness analyzer. It does not calculate migration readiness, migration blockers, migration paths, or rewrite effort.
+
+Future analysis can add external version intelligence such as EOL/deprecated-version detection and vulnerability checks while keeping the project focused on Java technology and dependency auditing.
