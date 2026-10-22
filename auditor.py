@@ -93,3 +93,39 @@ def audit(project):
         vs=sorted({m[key]['version'] for m in modules if m[key]['status']=='DETECTED'})
         if len(vs)>1:incs.append({'technology':label,'type':'VERSION_VARIATION_ACROSS_MODULES','versions':vs})
     return {'project':root.name,'build_system':'Unknown' if not systems else systems[0] if len(systems)==1 else 'Multiple','detected_build_systems':systems,'module_count':len(modules),'modules':modules,'version_inconsistencies':incs}
+
+
+def cli():
+    import argparse
+    import json
+
+    parser = argparse.ArgumentParser(
+        description="Audit a Java project for build systems, Java versions, and Spring Boot versions."
+    )
+    parser.add_argument("project", help="Path to the Java project directory")
+    parser.add_argument(
+        "-o", "--output",
+        help="Optional path for the JSON report (prints JSON to the terminal when omitted)"
+    )
+    args = parser.parse_args()
+
+    project = Path(args.project).expanduser()
+    if not project.exists():
+        parser.error(f"Project path does not exist: {project}")
+    if not project.is_dir():
+        parser.error(f"Project path must be a directory: {project}")
+
+    report = audit(project)
+    rendered = json.dumps(report, indent=2)
+
+    if args.output:
+        output = Path(args.output).expanduser()
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(rendered + "\\n", encoding="utf-8")
+        print(f"Audit report written to {output}")
+    else:
+        print(rendered)
+
+
+if __name__ == "__main__":
+    cli()
