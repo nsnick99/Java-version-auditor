@@ -1417,6 +1417,7 @@ def compact_report(report):
                 "status": update_status,
                 "lifecycle": lifecycle,
                 "source": source_map.get((module.get("path"), label)),
+                "source_url": update.get("lifecycle", {}).get("source_url"),
             })
 
     dependencies = []
@@ -1528,6 +1529,18 @@ def compact_report(report):
             if current:
                 vulnerability_check_statuses.append(vuln_status)
 
+    for technology in technologies:
+        if technology.get("lifecycle") in {"EOL", "NOT_MAINTAINED", "OSS_SUPPORT_ENDED_EXTENDED_SUPPORT_AVAILABLE"}:
+            alerts.append({
+                "type": "LIFECYCLE_WARNING",
+                "severity": "WARNING",
+                "module": technology.get("module"),
+                "component": technology.get("name"),
+                "current_version": technology.get("current_version"),
+                "message": "Lifecycle status: " + str(technology.get("lifecycle")),
+                "source_url": technology.get("source_url"),
+            })
+
     # Keep cross-module version differences separate from component update rows.
     conflict_list = []
     for item in report.get("dependency_version_conflicts", []):
@@ -1550,7 +1563,7 @@ def compact_report(report):
             return "NOT_APPLICABLE"
         if any(value in {"UNAVAILABLE", "NOT_FOUND", "NO_STABLE_RELEASE_FOUND", "CHECK_UNAVAILABLE", "VERSION_CHECK_UNAVAILABLE", "VERSION_UNKNOWN", "VERSION_NOT_RESOLVED"} for value in values):
             return "PARTIAL"
-        if any(value in {"NOT_CATALOGUED", "CYCLE_NOT_FOUND", "NOT_SUPPORTED_BY_MAVEN_CENTRAL_LOOKUP", "VERSION_CHECK_NOT_SUPPORTED", "NOT_VERIFIED"} for value in values):
+        if any(value in {"NOT_CATALOGUED", "CYCLE_NOT_FOUND", "NOT_SUPPORTED_BY_MAVEN_CENTRAL_LOOKUP", "VERSION_CHECK_NOT_SUPPORTED", "NOT_VERIFIED", "COMPARISON_UNSUPPORTED", "CURRENT_VERSION_NEWER_THAN_REGISTRY"} for value in values):
             return "AVAILABLE_WITH_GAPS"
         return "CHECKED"
 
