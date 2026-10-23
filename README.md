@@ -37,7 +37,7 @@ The JSON uses a stable, concise schema:
 - summary: module/dependency counts, updates, vulnerability alerts, lifecycle warnings, and version conflicts
 - technologies: Java and Spring Boot current/recommended version per module
 - dependencies: component coordinates, current/latest version, status, vulnerability summaries, lifecycle status, and source file
-- alerts: actionable update, vulnerability, lifecycle, and maintenance advisories
+- alerts: vulnerability, lifecycle, and maintenance advisories; update versions are already shown on each dependency
 - version_conflicts: versions of the same component that differ across modules
 - checks: whether external checks were completed, skipped, or partially available
 
