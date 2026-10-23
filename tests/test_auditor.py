@@ -196,6 +196,50 @@ class VersionAuditorTests(unittest.TestCase):
         self.assertNotIn("project_path", result)
         self.assertNotIn("version_intelligence", result)
 
+    def test_version_comparison_uncertainty_is_not_reported_as_current(self):
+        raw = {
+            "project": "sample",
+            "module_count": 1,
+            "modules": [{
+                "path": ".",
+                "java": {"status": "NOT_DETECTED", "version": None, "evidence": []},
+                "spring_boot": {"status": "NOT_DETECTED", "version": None, "evidence": []},
+                "technology_updates": {
+                    "java": {"recommended_version": None, "lifecycle": {"status": "NOT_CHECKED"}},
+                    "spring_boot": {"recommended_version": None, "lifecycle": {"status": "NOT_CHECKED"}},
+                },
+                "dependencies": [{
+                    "group_id": "org.example", "artifact_id": "custom-lib", "version": "2024-release",
+                    "component_type": "dependency", "source": "pom.xml",
+                    "version_intelligence": {
+                        "status": "COMPARISON_UNSUPPORTED", "latest_version": "2025-release",
+                        "update_available": None, "lifecycle": {"status": "NOT_CHECKED"},
+                        "deprecation": {"status": "NOT_VERIFIED"}, "vulnerability_status": "NOT_CHECKED",
+                        "vulnerabilities": [],
+                    },
+                }],
+                "dependency_resolution": {"status": "NOT_REQUESTED"},
+            }],
+            "dependency_version_conflicts": [],
+            "version_inconsistencies": [],
+            "dependency_resolution_requested": False,
+            "version_recommendations": [],
+            "version_intelligence": {
+                "status": "COMPLETE", "checked_at": "2026-10-23T00:00:00+00:00",
+                "vulnerability_scan": {"status": "COMPLETE"},
+            },
+        }
+        result = auditor.compact_report(raw)
+        self.assertEqual(result["dependencies"][0]["status"], "VERSION_COMPARISON_UNCERTAIN")
+        self.assertEqual(result["checks"]["vulnerabilities"], "AVAILABLE_WITH_GAPS")
+
+    def test_missing_build_files_are_reported_explicitly(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            report = auditor.audit(Path(tmp), online=False)
+            self.assertFalse(report["scan"]["project_detected"])
+            self.assertIn("No Maven", report["scan"]["warning"])
+            self.assertEqual(report["summary"]["modules"], 0)
+
     def test_known_maintenance_advisory(self):
         result = auditor.known_deprecation({
             "group_id": "com.netflix.hystrix",
