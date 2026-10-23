@@ -1576,7 +1576,7 @@ def compact_report(report):
             return "SKIPPED"
         if not values:
             return "NOT_APPLICABLE"
-        if any(value in {"UNAVAILABLE", "CHECK_UNAVAILABLE", "VERSION_CHECK_UNAVAILABLE", "VERSION_UNKNOWN", "VERSION_NOT_RESOLVED"} for value in values):
+        if any(value in {"UNAVAILABLE", "NOT_FOUND", "NO_STABLE_RELEASE_FOUND", "CHECK_UNAVAILABLE", "VERSION_CHECK_UNAVAILABLE", "VERSION_UNKNOWN", "VERSION_NOT_RESOLVED"} for value in values):
             return "PARTIAL"
         if any(value in {"NOT_CATALOGUED", "CYCLE_NOT_FOUND", "NOT_SUPPORTED_BY_MAVEN_CENTRAL_LOOKUP", "VERSION_CHECK_NOT_SUPPORTED", "NOT_VERIFIED"} for value in values):
             return "AVAILABLE_WITH_GAPS"
@@ -1593,6 +1593,21 @@ def compact_report(report):
         "NOT_APPLICABLE" if not lifecycle_check_statuses else
         compact_check_status(lifecycle_check_statuses)
     )
+
+    resolution_statuses = [
+        module.get("dependency_resolution", {}).get("status", "NOT_REQUESTED")
+        for module in report.get("modules", [])
+    ]
+    if not report.get("dependency_resolution_requested"):
+        resolution_check = "STATIC_ONLY"
+    elif any(status in {"TOOL_NOT_FOUND", "TIMEOUT", "FAILED"} for status in resolution_statuses):
+        resolution_check = "FAILED_OR_PARTIAL"
+    elif any(status == "PARTIAL" for status in resolution_statuses):
+        resolution_check = "PARTIAL"
+    elif resolution_statuses and all(status in {"RESOLVED", "NOT_APPLICABLE"} for status in resolution_statuses):
+        resolution_check = "RESOLVED"
+    else:
+        resolution_check = "NOT_CONFIRMED"
 
     unique_vulnerable = {
         (item.get("module"), item.get("component"), item.get("version"))
@@ -1623,7 +1638,8 @@ def compact_report(report):
         "scan": {
             "completed_at": scan_info.get("checked_at"),
             "mode": "ONLINE" if online else "OFFLINE",
-            "dependency_resolution": "REQUESTED" if report.get("dependency_resolution_requested") else "STATIC_ONLY",
+            "build_system": report.get("build_system", "Unknown"),
+            "dependency_resolution": resolution_check,
             "project_detected": not no_build_files,
             "warning": "No Maven, Gradle, or Ant build file was found." if no_build_files else None,
         },
@@ -1647,6 +1663,7 @@ def compact_report(report):
             "latest_versions": version_check,
             "vulnerabilities": vulnerability_check,
             "lifecycle": lifecycle_check,
+            "transitive_dependencies": resolution_check,
         },
     }
 
