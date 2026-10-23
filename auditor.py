@@ -1631,6 +1631,22 @@ def compact_report(report):
     warning_count = sum(1 for item in alerts if item.get("severity") in {"HIGH", "CRITICAL", "WARNING"})
     no_build_files = report.get("module_count", 0) == 0
 
+    # Keep optional fields out of the public schema when no value was detected.
+    cleaned_technologies = [
+        {key: value for key, value in item.items() if value is not None and value != [] and value != ""}
+        for item in technologies
+        if not (item.get("name") == "Spring Boot" and item.get("status") == "NOT_DETECTED")
+    ]
+    scan = {
+        "completed_at": scan_info.get("checked_at"),
+        "mode": "ONLINE" if online else "OFFLINE",
+        "build_system": report.get("build_system", "Unknown"),
+        "dependency_resolution": resolution_check,
+        "project_detected": not no_build_files,
+        "warning": "No Maven, Gradle, or Ant build file was found." if no_build_files else None,
+    }
+    scan = {key: value for key, value in scan.items() if value is not None and value != ""}
+
     # Keep alert entries compact and stable; remove empty fields that do not help a consumer.
     cleaned_alerts = []
     for alert in alerts:
@@ -1643,14 +1659,7 @@ def compact_report(report):
     return {
         "schema_version": "1.0",
         "project": report.get("project"),
-        "scan": {
-            "completed_at": scan_info.get("checked_at"),
-            "mode": "ONLINE" if online else "OFFLINE",
-            "build_system": report.get("build_system", "Unknown"),
-            "dependency_resolution": resolution_check,
-            "project_detected": not no_build_files,
-            "warning": "No Maven, Gradle, or Ant build file was found." if no_build_files else None,
-        },
+        "scan": scan,
         "summary": {
             "modules": report.get("module_count", 0),
             "dependencies": dependency_count,
@@ -1664,7 +1673,7 @@ def compact_report(report):
             "version_conflicts": len(conflict_list),
             "alerts": len(cleaned_alerts),
         },
-        "technologies": technologies,
+        "technologies": cleaned_technologies,
         "dependencies": cleaned_dependencies,
         "alerts": cleaned_alerts,
         "version_conflicts": conflict_list,
