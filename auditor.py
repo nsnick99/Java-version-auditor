@@ -1575,21 +1575,33 @@ def compact_report(report):
                 latest_check_statuses.append(
                     "FOUND" if technology.get("recommended_version") else "UNAVAILABLE"
                 )
+            if technology.get("current_version") and technology.get("lifecycle") != "NOT_CHECKED":
+                lifecycle_check_statuses.append(technology.get("lifecycle"))
     version_check = compact_check_status(latest_check_statuses, skipped=not online)
 
     raw_vulnerability_status = scan_info.get("vulnerability_scan", {}).get("status", "SKIPPED")
+    unversioned_count = sum(1 for item in dependencies if not item.get("version"))
+    unsupported_release_count = sum(
+        1 for module in report.get("modules", [])
+        for component in module.get("dependencies", [])
+        if component.get("version") and component.get("latest_lookup_supported") is False
+    )
+    if online and dependencies and (unversioned_count or unsupported_release_count) and version_check in {"CHECKED", "NOT_APPLICABLE"}:
+        version_check = "AVAILABLE_WITH_GAPS"
+
     if not online:
         vulnerability_check = "SKIPPED"
-    elif not vulnerability_check_statuses:
+    elif not dependencies:
         vulnerability_check = "NOT_APPLICABLE"
     elif raw_vulnerability_status == "PARTIAL" or any(
         status in {"UNAVAILABLE", "CHECK_UNAVAILABLE", "DETAILS_UNAVAILABLE"}
         for status in vulnerability_check_statuses
     ):
         vulnerability_check = "PARTIAL"
-    elif any(
-        status in {"NOT_CHECKED", "VERSION_NOT_RESOLVED", "SKIPPED"}
-        for status in vulnerability_check_statuses
+    elif (
+        not vulnerability_check_statuses
+        or unversioned_count
+        or any(status in {"NOT_CHECKED", "VERSION_NOT_RESOLVED", "SKIPPED"} for status in vulnerability_check_statuses)
     ):
         vulnerability_check = "AVAILABLE_WITH_GAPS"
     elif raw_vulnerability_status in {"COMPLETE", "NO_VERSIONED_COMPONENTS"}:
