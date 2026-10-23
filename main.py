@@ -36,6 +36,7 @@ def main():
     print("Modules: " + str(summary["modules"]))
     print("Dependencies: " + str(summary["dependencies"]))
     print("Updates available: " + str(summary["updates_available"]))
+    print("Technology updates: " + str(summary["technology_updates_available"]))
     print("Vulnerable components: " + str(summary["vulnerable_components"]))
     print("Lifecycle warnings: " + str(summary["lifecycle_warnings"]))
     print("Version conflicts: " + str(summary["version_conflicts"]))
@@ -46,12 +47,25 @@ def main():
         + ", transitive dependencies=" + report["checks"]["transitive_dependencies"]
     )
 
+    updates = [item for item in report["dependencies"] if item.get("status") == "UPDATE_AVAILABLE"]
+    for item in updates[:8]:
+        print(
+            "- [UPDATE] " + str(item.get("component")) + ": "
+            + str(item.get("version")) + " -> " + str(item.get("latest_stable"))
+        )
+    if len(updates) > 8:
+        print("... " + str(len(updates) - 8) + " more updates in the JSON report.")
+
+    technology_updates = [item for item in report["technologies"] if item.get("status") == "UPDATE_AVAILABLE"]
+    for item in technology_updates[:4]:
+        print(
+            "- [UPDATE] " + str(item.get("name")) + " (" + str(item.get("module")) + "): "
+            + str(item.get("current_version")) + " -> " + str(item.get("recommended_version"))
+        )
+
     notable = [
         item for item in report["alerts"]
-        if item.get("type") in {
-            "KNOWN_VULNERABILITY", "LIFECYCLE_WARNING", "MAINTENANCE_MODE",
-            "OUTDATED_COMPONENT", "TECHNOLOGY_UPDATE_AVAILABLE",
-        }
+        if item.get("type") in {"KNOWN_VULNERABILITY", "LIFECYCLE_WARNING", "MAINTENANCE_MODE"}
     ]
     for item in notable[:10]:
         component = str(item.get("component", ""))
