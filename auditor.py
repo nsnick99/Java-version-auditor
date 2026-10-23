@@ -1441,16 +1441,6 @@ def compact_report(report):
 
             if update_available is True:
                 status = "UPDATE_AVAILABLE"
-                alerts.append({
-                    "type": "OUTDATED_COMPONENT",
-                    "severity": "INFO",
-                    "module": module.get("path"),
-                    "component": coordinate,
-                    "current_version": current,
-                    "recommended_version": latest,
-                    "message": "A newer stable release is available; compatibility has not been assessed.",
-                    "source_url": intelligence.get("latest_source_url"),
-                })
             elif update_available is False and lookup_status not in {"CURRENT_VERSION_NEWER_THAN_REGISTRY", "COMPARISON_UNSUPPORTED"}:
                 status = "CURRENT"
             elif lookup_status in {"CURRENT_VERSION_NEWER_THAN_REGISTRY", "COMPARISON_UNSUPPORTED"}:
@@ -1482,7 +1472,7 @@ def compact_report(report):
                     "current_version": current,
                     "advisory": vulnerability.get("id"),
                     "fixed_in": fixed,
-                    "message": vulnerability.get("summary") or "OSV returned a matching vulnerability advisory.",
+                    "message": (vulnerability.get("summary") or "Known vulnerability advisory.")[:160],
                     "source_url": vulnerability.get("source_url"),
                 })
 
@@ -1526,7 +1516,7 @@ def compact_report(report):
                 "latest_stable": latest,
                 "status": status,
                 "vulnerability_status": vuln_status,
-                "vulnerabilities": compact_vulnerabilities,
+                "vulnerability_count": len(compact_vulnerabilities),
                 "lifecycle": lifecycle,
                 "source": component.get("source"),
             })
@@ -1539,24 +1529,6 @@ def compact_report(report):
                 vulnerability_check_statuses.append(vuln_status)
 
     # Technology-level update alerts (Java LTS and Spring Boot parent release).
-    for technology in technologies:
-        if technology.get("status") == "UPDATE_AVAILABLE":
-            alerts.append({
-                "type": "TECHNOLOGY_UPDATE_AVAILABLE",
-                "severity": "INFO",
-                "module": technology.get("module"),
-                "component": technology.get("name"),
-                "current_version": technology.get("current_version"),
-                "recommended_version": technology.get("recommended_version"),
-                "message": "A newer version reference is available; compatibility has not been assessed.",
-                "source_url": next((
-                    update.get("source_url")
-                    for update in report.get("version_recommendations", [])
-                    if update.get("component") == technology.get("name")
-                    and update.get("module") == technology.get("module")
-                ), None),
-            })
-
     conflict_list = []
     for item in report.get("dependency_version_conflicts", []):
         conflict_list.append({
@@ -1611,13 +1583,13 @@ def compact_report(report):
 
     unique_vulnerable = {
         (item.get("module"), item.get("component"), item.get("version"))
-        for item in dependencies if item.get("vulnerabilities")
+        for item in dependencies if item.get("vulnerability_count", 0) > 0
     }
     unique_outdated = {
         (item.get("module"), item.get("component"), item.get("version"))
         for item in dependencies if item.get("status") == "UPDATE_AVAILABLE"
     }
-    vulnerability_alert_count = sum(len(item.get("vulnerabilities", [])) for item in dependencies)
+    vulnerability_alert_count = sum(item.get("vulnerability_count", 0) for item in dependencies)
     dependency_count = sum(1 for item in dependencies if item.get("type") == "dependency")
     plugin_count = sum(1 for item in dependencies if item.get("type") == "build_plugin")
     warning_count = sum(1 for item in alerts if item.get("severity") in {"HIGH", "CRITICAL", "WARNING"})
@@ -1648,6 +1620,7 @@ def compact_report(report):
             "dependencies": dependency_count,
             "build_plugins": plugin_count,
             "updates_available": len(unique_outdated),
+            "technology_updates_available": sum(1 for item in technologies if item.get("status") == "UPDATE_AVAILABLE"),
             "vulnerable_components": len(unique_vulnerable),
             "known_vulnerability_advisories": vulnerability_alert_count,
             "lifecycle_warnings": sum(1 for alert in cleaned_alerts if alert.get("type") == "LIFECYCLE_WARNING"),
