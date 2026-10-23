@@ -1416,6 +1416,7 @@ def compact_report(report):
                 "recommended_version": recommended,
                 "status": update_status,
                 "lifecycle": lifecycle,
+                "support_end_date": update.get("lifecycle", {}).get("eol_date"),
                 "source": source_map.get((module.get("path"), label)),
                 "source_url": update.get("lifecycle", {}).get("source_url"),
             })
@@ -1538,6 +1539,7 @@ def compact_report(report):
                 "component": technology.get("name"),
                 "current_version": technology.get("current_version"),
                 "message": "Lifecycle status: " + str(technology.get("lifecycle")),
+                "support_end_date": technology.get("support_end_date"),
                 "source_url": technology.get("source_url"),
             })
 
