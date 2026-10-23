@@ -165,7 +165,7 @@ class VersionAuditorTests(unittest.TestCase):
                 "java": {"status": "DETECTED", "version": "17", "evidence": [{"version": "17", "source": "pom.xml > properties.java.version"}]},
                 "spring_boot": {"status": "NOT_DETECTED", "version": None, "evidence": []},
                 "technology_updates": {
-                    "java": {"recommended_version": "21", "lifecycle": {"status": "MAINTAINED"}},
+                    "java": {"recommended_version": "21", "lifecycle": {"status": "EOL", "source_url": "https://endoflife.date/java"}},
                     "spring_boot": {"recommended_version": None, "lifecycle": {"status": "NOT_CHECKED"}},
                 },
                 "dependencies": [{
@@ -192,6 +192,7 @@ class VersionAuditorTests(unittest.TestCase):
         result = auditor.compact_report(raw)
         self.assertEqual(result["summary"]["dependencies"], 1)
         self.assertEqual(result["summary"]["updates_available"], 1)
+        self.assertEqual(result["summary"]["lifecycle_warnings"], 1)
         self.assertEqual(result["dependencies"][0]["status"], "UPDATE_AVAILABLE")
         self.assertNotIn("project_path", result)
         self.assertNotIn("version_intelligence", result)
@@ -231,6 +232,7 @@ class VersionAuditorTests(unittest.TestCase):
         }
         result = auditor.compact_report(raw)
         self.assertEqual(result["dependencies"][0]["status"], "VERSION_COMPARISON_UNCERTAIN")
+        self.assertEqual(result["checks"]["latest_versions"], "AVAILABLE_WITH_GAPS")
         self.assertEqual(result["checks"]["vulnerabilities"], "AVAILABLE_WITH_GAPS")
 
     def test_missing_build_files_are_reported_explicitly(self):
