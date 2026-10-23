@@ -9,15 +9,15 @@ from auditor import audit
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Audit Java technology versions, available dependency updates, lifecycle status, and known vulnerabilities."
+        description="Audit Java versions, dependency updates, known vulnerabilities, and lifecycle warnings."
     )
     parser.add_argument("project", help="Path to the Java project directory")
-    parser.add_argument("-o", "--output", default="audit-report.json", help="JSON report path (default: audit-report.json)")
-    parser.add_argument("--offline", action="store_true", help="Skip online release, lifecycle, and vulnerability lookups")
+    parser.add_argument("-o", "--output", default="audit-report.json", help="JSON report path")
+    parser.add_argument("--offline", action="store_true", help="Skip online version/security/lifecycle checks")
     parser.add_argument(
         "--resolve",
         action="store_true",
-        help="Invoke Maven/Gradle to inspect resolved/transitive dependencies; this executes the project's build configuration",
+        help="Ask Maven/Gradle to resolve transitive dependencies; executes project build configuration",
     )
     args = parser.parse_args()
 
@@ -30,22 +30,42 @@ def main():
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
-    print("Project: " + report["project"])
-    print("Build system: " + report["build_system"])
-    print("Modules found: " + str(report["module_count"]))
-    print("Components found: " + str(report.get("component_count", 0)))
-    summary = report.get("summary", {})
-    if args.offline:
-        print("Online version/security checks: skipped")
-    else:
-        print("Available updates: " + str(summary.get("outdated_component_count", 0)))
-        print("Known vulnerability findings: " + str(summary.get("vulnerability_finding_count", 0)))
-        print("Lifecycle warnings: " + str(summary.get("lifecycle_warning_count", 0)))
-        print("Maintenance advisories: " + str(summary.get("maintenance_advisory_count", 0)))
-    for module in report["modules"]:
-        java_version = module["java"].get("version") or module["java"].get("status")
-        boot_version = module["spring_boot"].get("version") or module["spring_boot"].get("status")
-        print("- " + module["path"] + ": Java=" + str(java_version) + ", Spring Boot=" + str(boot_version))
+    summary = report["summary"]
+    print("Project: " + str(report["project"]))
+    print("Modules: " + str(summary["modules"]))
+    print("Dependencies: " + str(summary["dependencies"]))
+    print("Updates available: " + str(summary["updates_available"]))
+    print("Vulnerable components: " + str(summary["vulnerable_components"]))
+    print("Lifecycle warnings: " + str(summary["lifecycle_warnings"]))
+    print("Version conflicts: " + str(summary["version_conflicts"]))
+    print(
+        "Checks: versions=" + report["checks"]["latest_versions"]
+        + ", vulnerabilities=" + report["checks"]["vulnerabilities"]
+        + ", lifecycle=" + report["checks"]["lifecycle"]
+    )
+
+    notable = [
+        item for item in report["alerts"]
+        if item.get("type") in {
+            "KNOWN_VULNERABILITY", "LIFECYCLE_WARNING", "MAINTENANCE_MODE",
+            "OUTDATED_COMPONENT", "TECHNOLOGY_UPDATE_AVAILABLE",
+        }
+    ]
+    for item in notable[:10]:
+        component = str(item.get("component", ""))
+        current = str(item.get("current_version", ""))
+        recommended = item.get("recommended_version")
+        line = "- [" + str(item.get("severity", "INFO")) + "] " + str(item.get("type")) + ": " + component
+        if current:
+            line += " " + current
+        if recommended:
+            line += " -> " + str(recommended)
+        if item.get("advisory"):
+            line += " (" + str(item["advisory"]) + ")"
+        print(line)
+    if len(notable) > 10:
+        print("... " + str(len(notable) - 10) + " more alerts in the JSON report.")
+
     print("Report: " + str(output))
 
 
