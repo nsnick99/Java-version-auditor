@@ -32,6 +32,7 @@ def main():
 
     summary = report["summary"]
     print("Project: " + str(report["project"]))
+    print("Build system: " + str(report["scan"].get("build_system", "Unknown")))
     print("Modules: " + str(summary["modules"]))
     print("Dependencies: " + str(summary["dependencies"]))
     print("Updates available: " + str(summary["updates_available"]))
@@ -42,6 +43,7 @@ def main():
         "Checks: versions=" + report["checks"]["latest_versions"]
         + ", vulnerabilities=" + report["checks"]["vulnerabilities"]
         + ", lifecycle=" + report["checks"]["lifecycle"]
+        + ", transitive dependencies=" + report["checks"]["transitive_dependencies"]
     )
 
     notable = [
