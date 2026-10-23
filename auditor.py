@@ -1225,23 +1225,28 @@ def enrich_report(report, online=True):
                 result["latest_version"] = latest.get("version")
                 result["latest_source_url"] = latest.get("url")
                 if latest.get("version"):
-                    comparison = compare_versions(version, latest["version"])
-                    result["update_available"] = comparison < 0
-                    if result["update_available"]:
-                        result["change_level"] = change_level(version, latest["version"])
-                        recommendations.append({
-                            "component": group + ":" + artifact,
-                            "module": component.get("_module_path"),
-                            "current_version": version,
-                            "recommended_version": latest["version"],
-                            "change_level": result["change_level"],
-                            "reason": "A newer stable version was found in Maven Central metadata; compatibility was not evaluated.",
-                            "source_url": latest.get("url"),
-                        })
-                    elif comparison == 0:
-                        result["update_available"] = False
+                    if not version_numbers(version) or not version_numbers(latest["version"]):
+                        result["update_available"] = None
+                        result["status"] = "COMPARISON_UNSUPPORTED"
                     else:
-                        result["status"] = "CURRENT_VERSION_NEWER_OR_NOT_COMPARABLE"
+                        comparison = compare_versions(version, latest["version"])
+                        if comparison < 0:
+                            result["update_available"] = True
+                            result["change_level"] = change_level(version, latest["version"])
+                            recommendations.append({
+                                "component": group + ":" + artifact,
+                                "module": component.get("_module_path"),
+                                "current_version": version,
+                                "recommended_version": latest["version"],
+                                "change_level": result["change_level"],
+                                "reason": "A newer stable release was found in Maven Central metadata; compatibility was not assessed.",
+                                "source_url": latest.get("url"),
+                            })
+                        elif comparison == 0:
+                            result["update_available"] = False
+                        else:
+                            result["update_available"] = None
+                            result["status"] = "CURRENT_VERSION_NEWER_THAN_REGISTRY"
                 elif latest.get("message"):
                     result["lookup_message"] = latest["message"]
 
@@ -1394,10 +1399,12 @@ def compact_report(report):
             recommended = update.get("recommended_version")
             lifecycle = update.get("lifecycle", {}).get("status", "NOT_CHECKED")
             tech_status = finding_data.get("status", "NOT_DETECTED")
-            if current and recommended and compare_versions(current, recommended) < 0:
+            if current and recommended and version_numbers(current) and version_numbers(recommended) and compare_versions(current, recommended) < 0:
                 update_status = "UPDATE_AVAILABLE"
-            elif current and recommended:
+            elif current and recommended and version_numbers(current) and version_numbers(recommended):
                 update_status = "CURRENT_OR_NEWER"
+            elif current and recommended:
+                update_status = "VERSION_COMPARISON_UNCERTAIN"
             elif current:
                 update_status = "RECOMMENDATION_UNAVAILABLE"
             else:
@@ -1444,8 +1451,10 @@ def compact_report(report):
                     "message": "A newer stable release is available; compatibility has not been assessed.",
                     "source_url": intelligence.get("latest_source_url"),
                 })
-            elif update_available is False:
+            elif update_available is False and lookup_status not in {"CURRENT_VERSION_NEWER_THAN_REGISTRY", "COMPARISON_UNSUPPORTED"}:
                 status = "CURRENT"
+            elif lookup_status in {"CURRENT_VERSION_NEWER_THAN_REGISTRY", "COMPARISON_UNSUPPORTED"}:
+                status = "VERSION_COMPARISON_UNCERTAIN"
             elif not current:
                 status = "VERSION_UNKNOWN"
             elif lookup_status in {"UNAVAILABLE", "NOT_FOUND", "NO_STABLE_RELEASE_FOUND"}:
@@ -1579,9 +1588,10 @@ def compact_report(report):
     vulnerability_check = scan_info.get("vulnerability_scan", {}).get("status", "SKIPPED")
     if vulnerability_check == "NO_VERSIONED_COMPONENTS":
         vulnerability_check = "NOT_APPLICABLE"
-    lifecycle_check = compact_check_status(
-        lifecycle_check_statuses,
-        skipped=not online or not lifecycle_check_statuses,
+    lifecycle_check = (
+        "SKIPPED" if not online else
+        "NOT_APPLICABLE" if not lifecycle_check_statuses else
+        compact_check_status(lifecycle_check_statuses)
     )
 
     unique_vulnerable = {
