@@ -1525,10 +1525,10 @@ def compact_report(report):
                 latest_check_statuses.append(lookup_status)
             if lifecycle != "NOT_CHECKED":
                 lifecycle_check_statuses.append(lifecycle)
-            if current and component.get("latest_lookup_supported") is not False:
+            if current:
                 vulnerability_check_statuses.append(vuln_status)
 
-    # Technology-level update alerts (Java LTS and Spring Boot parent release).
+    # Keep cross-module version differences separate from component update rows.
     conflict_list = []
     for item in report.get("dependency_version_conflicts", []):
         conflict_list.append({
@@ -1556,10 +1556,33 @@ def compact_report(report):
 
     scan_info = report.get("version_intelligence", {})
     online = scan_info.get("status") != "SKIPPED"
+    if online:
+        for technology in technologies:
+            if technology.get("current_version"):
+                latest_check_statuses.append(
+                    "FOUND" if technology.get("recommended_version") else "UNAVAILABLE"
+                )
     version_check = compact_check_status(latest_check_statuses, skipped=not online)
-    vulnerability_check = scan_info.get("vulnerability_scan", {}).get("status", "SKIPPED")
-    if vulnerability_check == "NO_VERSIONED_COMPONENTS":
+
+    raw_vulnerability_status = scan_info.get("vulnerability_scan", {}).get("status", "SKIPPED")
+    if not online:
+        vulnerability_check = "SKIPPED"
+    elif not vulnerability_check_statuses:
         vulnerability_check = "NOT_APPLICABLE"
+    elif raw_vulnerability_status == "PARTIAL" or any(
+        status in {"UNAVAILABLE", "CHECK_UNAVAILABLE", "DETAILS_UNAVAILABLE"}
+        for status in vulnerability_check_statuses
+    ):
+        vulnerability_check = "PARTIAL"
+    elif any(
+        status in {"NOT_CHECKED", "VERSION_NOT_RESOLVED", "SKIPPED"}
+        for status in vulnerability_check_statuses
+    ):
+        vulnerability_check = "AVAILABLE_WITH_GAPS"
+    elif raw_vulnerability_status in {"COMPLETE", "NO_VERSIONED_COMPONENTS"}:
+        vulnerability_check = "CHECKED"
+    else:
+        vulnerability_check = raw_vulnerability_status
     lifecycle_check = (
         "SKIPPED" if not online else
         "NOT_APPLICABLE" if not lifecycle_check_statuses else
@@ -1636,7 +1659,6 @@ def compact_report(report):
             "latest_versions": version_check,
             "vulnerabilities": vulnerability_check,
             "lifecycle": lifecycle_check,
-            "transitive_dependencies": resolution_check,
         },
     }
 
