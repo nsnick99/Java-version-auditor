@@ -44,7 +44,7 @@ def main():
         "Checks: versions=" + report["checks"]["latest_versions"]
         + ", vulnerabilities=" + report["checks"]["vulnerabilities"]
         + ", lifecycle=" + report["checks"]["lifecycle"]
-        + ", transitive dependencies=" + report["checks"]["transitive_dependencies"]
+        + ", dependencies=" + report["scan"]["dependency_resolution"]
     )
 
     updates = [item for item in report["dependencies"] if item.get("status") == "UPDATE_AVAILABLE"]
