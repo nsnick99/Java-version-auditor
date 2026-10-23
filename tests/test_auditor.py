@@ -150,6 +150,52 @@ class VersionAuditorTests(unittest.TestCase):
         self.assertEqual(finding["vulnerabilities"][0]["severity"], "HIGH")
         self.assertEqual(finding["vulnerabilities"][0]["fixed_versions"], ["1.0.1"])
 
+    def test_compact_report_keeps_main_dependency_fields(self):
+        raw = {
+            "project": "sample",
+            "project_path": "/tmp/sample",
+            "build_system": "Maven",
+            "detected_build_systems": ["Maven"],
+            "module_count": 1,
+            "modules": [{
+                "name": "sample",
+                "path": ".",
+                "build_systems": ["Maven"],
+                "build_files": ["pom.xml"],
+                "java": {"status": "DETECTED", "version": "17", "evidence": [{"version": "17", "source": "pom.xml > properties.java.version"}]},
+                "spring_boot": {"status": "NOT_DETECTED", "version": None, "evidence": []},
+                "technology_updates": {
+                    "java": {"recommended_version": "21", "lifecycle": {"status": "MAINTAINED"}},
+                    "spring_boot": {"recommended_version": None, "lifecycle": {"status": "NOT_CHECKED"}},
+                },
+                "dependencies": [{
+                    "group_id": "org.example", "artifact_id": "sample-lib", "version": "1.0.0",
+                    "declared_version": "1.0.0", "version_source": "declared", "scope": "compile",
+                    "optional": False, "direct": True, "component_type": "dependency", "source": "pom.xml",
+                    "version_intelligence": {
+                        "status": "FOUND", "latest_version": "1.2.0", "update_available": True,
+                        "latest_source_url": "https://repo.maven.apache.org/maven2/org/example/sample-lib/maven-metadata.xml",
+                        "lifecycle": {"status": "NOT_CHECKED"}, "deprecation": {"status": "NOT_VERIFIED"},
+                        "vulnerability_status": "NO_MATCHING_ADVISORIES", "vulnerabilities": [],
+                    },
+                }],
+            }],
+            "dependency_version_conflicts": [],
+            "version_inconsistencies": [],
+            "dependency_resolution_requested": False,
+            "version_recommendations": [],
+            "version_intelligence": {
+                "status": "COMPLETE", "checked_at": "2026-10-23T00:00:00+00:00",
+                "vulnerability_scan": {"status": "COMPLETE"},
+            },
+        }
+        result = auditor.compact_report(raw)
+        self.assertEqual(result["summary"]["dependencies"], 1)
+        self.assertEqual(result["summary"]["updates_available"], 1)
+        self.assertEqual(result["dependencies"][0]["status"], "UPDATE_AVAILABLE")
+        self.assertNotIn("project_path", result)
+        self.assertNotIn("version_intelligence", result)
+
     def test_known_maintenance_advisory(self):
         result = auditor.known_deprecation({
             "group_id": "com.netflix.hystrix",
@@ -170,9 +216,15 @@ class VersionAuditorTests(unittest.TestCase):
                 encoding="utf-8",
             )
             report = auditor.audit(root, online=False)
-            self.assertEqual(report["module_count"], 1)
-            self.assertEqual(report["modules"][0]["java"]["version"], "17")
-            self.assertEqual(report["version_intelligence"]["status"], "SKIPPED")
+            self.assertEqual(report["summary"]["modules"], 1)
+            java_tech = next(item for item in report["technologies"] if item["name"] == "Java")
+            self.assertEqual(java_tech["current_version"], "17")
+            self.assertEqual(report["scan"]["mode"], "OFFLINE")
+            self.assertEqual(report["checks"]["latest_versions"], "SKIPPED")
+            self.assertEqual(
+                set(report.keys()),
+                {"schema_version", "project", "scan", "summary", "technologies", "dependencies", "alerts", "version_conflicts", "checks"},
+            )
 
 
 if __name__ == "__main__":
