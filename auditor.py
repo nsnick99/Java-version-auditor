@@ -1701,15 +1701,18 @@ def compact_report(report):
     vulnerability_check = check_state(vulnerability_check_values, online)
     lifecycle_check = check_state(lifecycle_check_values, online)
 
-    if not online:
-        overall_status = "CHECK_INCOMPLETE"
-        status_message = "Online checks were skipped; no components are being marked OK."
-    elif report.get("module_count", 0) == 0:
+    if report.get("module_count", 0) == 0:
         overall_status = "NO_BUILD_FILES"
         status_message = "No supported build files were found."
+    elif not online:
+        overall_status = "CHECK_INCOMPLETE"
+        status_message = "Online checks were skipped; no components are being marked OK."
     elif review_items:
         overall_status = "REVIEW_REQUIRED"
-        status_message = str(len(review_items)) + " component(s) need review; components with no detected issues are summarized as OK."
+        if any(value in {"PARTIAL", "SKIPPED"} for value in (version_check, vulnerability_check, lifecycle_check)):
+            status_message = str(len(review_items)) + " component(s) need review; some checks are incomplete. Components without detected issues are summarized as OK."
+        else:
+            status_message = str(len(review_items)) + " component(s) need review; components with no detected issues are summarized as OK."
     elif any(value in {"PARTIAL", "SKIPPED"} for value in (version_check, vulnerability_check, lifecycle_check)):
         overall_status = "CHECK_INCOMPLETE"
         status_message = "No issues were flagged in completed checks, but some checks were incomplete."
@@ -1744,10 +1747,10 @@ def compact_report(report):
         "mode": "ONLINE" if online else "OFFLINE",
         "build_system": report.get("build_system", "Unknown"),
         "dependency_resolution": (
-            "RESOLVED" if report.get("dependency_resolution_requested") and
-            all(module.get("dependency_resolution", {}).get("status") in {"RESOLVED", "NOT_APPLICABLE"} for module in modules)
-            else "REQUESTED_BUT_INCOMPLETE" if report.get("dependency_resolution_requested")
-            else "STATIC_ONLY"
+            "STATIC_ONLY" if not report.get("dependency_resolution_requested")
+            else "NOT_CONFIRMED" if not modules
+            else "RESOLVED" if all(module.get("dependency_resolution", {}).get("status") in {"RESOLVED", "NOT_APPLICABLE"} for module in modules)
+            else "REQUESTED_BUT_INCOMPLETE"
         ),
         "project_detected": not no_build_files,
     }
