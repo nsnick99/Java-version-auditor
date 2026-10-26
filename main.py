@@ -65,6 +65,8 @@ def main():
                     issue_line += " | advisory: " + str(issue["advisory"])
                 if issue.get("message"):
                     issue_line += " — " + str(issue["message"])
+                if issue.get("details"):
+                    issue_line += " | details: " + str(issue["details"])
                 print(issue_line)
     else:
         print("\nNo components were flagged for review by the completed checks.")
