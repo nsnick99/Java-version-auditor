@@ -203,6 +203,57 @@ class VersionAuditorTests(unittest.TestCase):
         self.assertNotIn("project_path", result)
         self.assertNotIn("version_intelligence", result)
 
+    def test_clean_components_are_summarized_as_ok_not_listed(self):
+        raw = {
+            "project": "clean-sample",
+            "build_system": "Maven",
+            "module_count": 1,
+            "modules": [{
+                "name": "clean-sample",
+                "path": ".",
+                "java": {"status": "DETECTED", "version": "21", "evidence": [{"version": "21", "source": "pom.xml > properties.java.version"}]},
+                "spring_boot": {"status": "NOT_DETECTED", "version": None, "evidence": []},
+                "technology_updates": {
+                    "java": {"recommended_version": "21", "lifecycle": {"status": "MAINTAINED", "source_url": "https://endoflife.date/java"}},
+                    "spring_boot": {"recommended_version": None, "lifecycle": {"status": "NOT_CHECKED"}},
+                },
+                "dependencies": [{
+                    "group_id": "org.example",
+                    "artifact_id": "stable-library",
+                    "version": "1.0.0",
+                    "component_type": "dependency",
+                    "source": "pom.xml",
+                    "version_intelligence": {
+                        "status": "FOUND",
+                        "latest_version": "1.0.0",
+                        "update_available": False,
+                        "latest_source_url": "https://repo.maven.apache.org/maven2/org/example/stable-library/maven-metadata.xml",
+                        "lifecycle": {"status": "NOT_CHECKED"},
+                        "deprecation": {"status": "NOT_VERIFIED"},
+                        "vulnerability_status": "NO_MATCHING_ADVISORIES",
+                        "vulnerabilities": [],
+                    },
+                }],
+                "dependency_resolution": {"status": "NOT_REQUESTED"},
+            }],
+            "dependency_version_conflicts": [],
+            "version_inconsistencies": [],
+            "dependency_resolution_requested": False,
+            "version_intelligence": {
+                "status": "COMPLETE",
+                "checked_at": "2026-10-26T00:00:00+00:00",
+                "vulnerability_scan": {"status": "COMPLETE"},
+            },
+        }
+
+        result = auditor.compact_report(raw)
+        self.assertEqual(result["summary"]["status"], "OK")
+        self.assertEqual(result["summary"]["components_scanned"], 2)
+        self.assertEqual(result["summary"]["components_ok"], 2)
+        self.assertEqual(result["summary"]["components_needing_review"], 0)
+        self.assertEqual(result["review_items"], [])
+        self.assertIn("All checked components look OK", result["summary"]["message"])
+
     def test_version_comparison_uncertainty_is_not_reported_as_current(self):
         raw = {
             "project": "sample",
