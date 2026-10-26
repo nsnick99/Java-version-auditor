@@ -917,6 +917,7 @@ def lifecycle_status(product_data, product, version):
             "product": product,
             "version": version,
             "source_url": product_data.get("url"),
+            "message": product_data.get("message"),
         }
     result = product_data.get("result", {})
     cycle = lifecycle_cycle(product, version)
@@ -928,6 +929,7 @@ def lifecycle_status(product_data, product, version):
             "cycle": cycle,
             "version": version,
             "source_url": result.get("links", {}).get("html", product_data.get("url")),
+            "message": "The release cycle was not found in the lifecycle catalogue.",
         }
 
     eol = release.get("isEol")
@@ -1516,6 +1518,15 @@ def compact_report(report):
                     "support_end_date": lifecycle_data.get("eol_date"),
                     "source_url": lifecycle_data.get("source_url") or intelligence.get("source_url"),
                 })
+            elif current and online and lifecycle in {"UNAVAILABLE", "NOT_CATALOGUED", "CYCLE_NOT_FOUND", "UNKNOWN"}:
+                item = item or new_item(module_path, label, "technology", current, None)
+                add_issue(item, {
+                    "type": "LIFECYCLE_CHECK_INCOMPLETE",
+                    "severity": "REVIEW",
+                    "message": "The lifecycle/support status could not be verified.",
+                    "details": lifecycle_data.get("message") or ("Lifecycle status: " + str(lifecycle)),
+                    "source_url": lifecycle_data.get("source_url") or intelligence.get("source_url"),
+                })
 
             if current:
                 if online:
@@ -1660,6 +1671,16 @@ def compact_report(report):
                     "source_url": lifecycle_data.get("source_url"),
                 })
                 component_has_problem = True
+            elif online and lifecycle in {"UNAVAILABLE", "NOT_CATALOGUED", "CYCLE_NOT_FOUND", "UNKNOWN"}:
+                item = item or new_item(module_path, coordinate, component_category, current, component.get("source"))
+                add_issue(item, {
+                    "type": "LIFECYCLE_CHECK_INCOMPLETE",
+                    "severity": "REVIEW",
+                    "message": "The lifecycle/support status could not be verified.",
+                    "details": lifecycle_data.get("message") or ("Lifecycle status: " + str(lifecycle)),
+                    "source_url": lifecycle_data.get("source_url"),
+                })
+                component_has_problem = True
 
             if deprecation.get("status") not in {None, "NOT_VERIFIED"}:
                 item = item or new_item(module_path, coordinate, component_category, current, component.get("source"))
@@ -1698,6 +1719,7 @@ def compact_report(report):
                 and current
                 and update_available is False
                 and vuln_status in {"NO_MATCHING_ADVISORIES", "NO_ADVISORY_REPORTED"}
+                and lifecycle not in {"UNAVAILABLE", "NOT_CATALOGUED", "CYCLE_NOT_FOUND", "UNKNOWN"}
             ):
                 dependency_ok += 1
 
@@ -1718,7 +1740,7 @@ def compact_report(report):
                 "Update and verify compatibility" if any(issue.get("type") == "UPDATE_AVAILABLE" for issue in item["issues"]) else None,
                 "Review the security advisory and upgrade to a fixed version" if any(issue.get("type") == "KNOWN_VULNERABILITY" for issue in item["issues"]) else None,
                 "Review support status and plan an upgrade" if any(issue.get("type") == "LIFECYCLE_WARNING" for issue in item["issues"]) else None,
-                "Manually verify the version or check coverage" if any(issue.get("type") in {"VERSION_UNKNOWN", "VERSION_NOT_VERIFIED", "VERSION_CHECK_INCOMPLETE", "VERSION_CHECK_NOT_SUPPORTED", "VERSION_COMPARISON_UNCERTAIN", "VERSION_NOT_DETECTED", "SECURITY_CHECK_INCOMPLETE"} for issue in item["issues"]) else None,
+                "Manually verify the version or check coverage" if any(issue.get("type") in {"VERSION_UNKNOWN", "VERSION_NOT_VERIFIED", "VERSION_CHECK_INCOMPLETE", "VERSION_CHECK_NOT_SUPPORTED", "VERSION_COMPARISON_UNCERTAIN", "VERSION_NOT_DETECTED", "SECURITY_CHECK_INCOMPLETE", "LIFECYCLE_CHECK_INCOMPLETE"} for issue in item["issues"]) else None,
                 "Resolve the version conflict" if any(issue.get("type") == "VERSION_CONFLICT" for issue in item["issues"]) else None,
                 "Review the recommended alternative" if any(issue.get("recommended_alternative") for issue in item["issues"]) else None,
             ) if action
@@ -1819,6 +1841,8 @@ def compact_report(report):
             )
             and module.get(key, {}).get("status") != "CONFLICT"
             and ("Java" if key == "java" else "Spring Boot") not in conflicted_technology_names
+            and module.get("technology_updates", {}).get(key, {}).get("recommended_version")
+            and module.get("technology_updates", {}).get(key, {}).get("lifecycle", {}).get("status") == "MAINTAINED"
         )
 
     return {
