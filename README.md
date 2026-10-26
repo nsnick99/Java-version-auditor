@@ -40,6 +40,10 @@ Each review item gives the module, component, current version, issue types, conc
 
 The root-level output.json is a generated report snapshot, not a live view. Regenerate it against the target Java project after changing the auditor:
 
+~~~bash
+python main.py /path/to/Java_Full_Stack_Project --output output.json
+~~~
+
 ## Analysis sources
 
 - Maven Central metadata for current stable releases
