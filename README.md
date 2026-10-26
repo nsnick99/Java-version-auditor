@@ -34,9 +34,11 @@ Use Python 3.8+. No third-party Python packages are required. Maven or Gradle is
 - review_items: only components with updates, known vulnerabilities, lifecycle warnings, version conflicts, unresolved versions, or incomplete checks
 - checks: whether version, vulnerability, and lifecycle checks completed
 
-If no issues are detected and checks completed, the summary says OK and reports that all checked components look OK. If online checks are skipped or incomplete, the report says CHECK_INCOMPLETE rather than claiming every component is clean.
+The summary says REVIEW_REQUIRED when findings exist, and its message indicates if any checks are incomplete. It says CHECK_INCOMPLETE when no findings were raised but required checks were skipped or incomplete. Components are counted as OK only when the required version, security, and applicable lifecycle checks support that conclusion.
 
-Each review item gives the module, component, current version, issue types, concise reasons, and a recommended action. Healthy components are not listed individually.
+Each review item gives the module, component, current version, issue types, concise reasons, and a recommended action. When a lookup fails, an issue includes available diagnostic details such as an HTTP status or network error. Healthy components are not listed individually.
+
+The root-level output.json is a generated report snapshot, not a live view. Regenerate it against the target Java project after changing the auditor:
 
 ## Analysis sources
 
