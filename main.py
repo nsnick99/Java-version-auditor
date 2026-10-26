@@ -9,7 +9,7 @@ from auditor import audit
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Audit Java versions, dependency updates, known vulnerabilities, and lifecycle warnings."
+        description="Find Java components that need a version, security, lifecycle, or conflict review."
     )
     parser.add_argument("project", help="Path to the Java project directory")
     parser.add_argument("-o", "--output", default="audit-report.json", help="JSON report path")
@@ -33,56 +33,43 @@ def main():
     summary = report["summary"]
     print("Project: " + str(report["project"]))
     print("Build system: " + str(report["scan"].get("build_system", "Unknown")))
+    print("Status: " + str(summary["status"]))
+    print(summary["message"])
     print("Modules: " + str(summary["modules"]))
-    print("Dependencies: " + str(summary["dependencies"]))
-    print("Updates available: " + str(summary["updates_available"]))
-    print("Technology updates: " + str(summary["technology_updates_available"]))
-    print("Vulnerable components: " + str(summary["vulnerable_components"]))
-    print("Lifecycle warnings: " + str(summary["lifecycle_warnings"]))
-    print("Version conflicts: " + str(summary["version_conflicts"]))
+    print("Components scanned: " + str(summary["components_scanned"]))
+    print("Components OK: " + str(summary["components_ok"]))
+    print("Components needing review: " + str(summary["components_needing_review"]))
     print(
         "Checks: versions=" + report["checks"]["latest_versions"]
         + ", vulnerabilities=" + report["checks"]["vulnerabilities"]
         + ", lifecycle=" + report["checks"]["lifecycle"]
-        + ", dependencies=" + report["scan"]["dependency_resolution"]
     )
 
-    updates = [item for item in report["dependencies"] if item.get("status") == "UPDATE_AVAILABLE"]
-    for item in updates[:8]:
-        print(
-            "- [UPDATE] " + str(item.get("component")) + ": "
-            + str(item.get("version")) + " -> " + str(item.get("latest_stable"))
-        )
-    if len(updates) > 8:
-        print("... " + str(len(updates) - 8) + " more updates in the JSON report.")
+    if report["review_items"]:
+        print("\nComponents needing attention:")
+        for item in report["review_items"]:
+            module = item.get("module", ".")
+            component = item.get("component", "unknown")
+            current = item.get("current_version")
+            line = "- " + str(component) + " [" + str(module) + "]"
+            if current:
+                line += " | current: " + str(current)
+            print(line)
+            for issue in item.get("issues", []):
+                issue_line = "    * " + str(issue.get("type", "REVIEW"))
+                if issue.get("recommended_version"):
+                    issue_line += " | recommended: " + str(issue["recommended_version"])
+                if issue.get("latest_version"):
+                    issue_line += " | latest: " + str(issue["latest_version"])
+                if issue.get("advisory"):
+                    issue_line += " | advisory: " + str(issue["advisory"])
+                if issue.get("message"):
+                    issue_line += " — " + str(issue["message"])
+                print(issue_line)
+    else:
+        print("\nNo components were flagged for review by the completed checks.")
 
-    technology_updates = [item for item in report["technologies"] if item.get("status") == "UPDATE_AVAILABLE"]
-    for item in technology_updates[:4]:
-        print(
-            "- [UPDATE] " + str(item.get("name")) + " (" + str(item.get("module")) + "): "
-            + str(item.get("current_version")) + " -> " + str(item.get("recommended_version"))
-        )
-
-    notable = [
-        item for item in report["alerts"]
-        if item.get("type") in {"KNOWN_VULNERABILITY", "LIFECYCLE_WARNING", "MAINTENANCE_MODE"}
-    ]
-    for item in notable[:10]:
-        component = str(item.get("component", ""))
-        current = str(item.get("current_version", ""))
-        recommended = item.get("recommended_version")
-        line = "- [" + str(item.get("severity", "INFO")) + "] " + str(item.get("type")) + ": " + component
-        if current:
-            line += " " + current
-        if recommended:
-            line += " -> " + str(recommended)
-        if item.get("advisory"):
-            line += " (" + str(item["advisory"]) + ")"
-        print(line)
-    if len(notable) > 10:
-        print("... " + str(len(notable) - 10) + " more alerts in the JSON report.")
-
-    print("Report: " + str(output))
+    print("\nReport: " + str(output))
 
 
 if __name__ == "__main__":
