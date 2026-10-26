@@ -1383,314 +1383,402 @@ def enrich_report(report, online=True):
 
 
 def compact_report(report):
-    """Project the internal analysis into a stable, concise public JSON schema."""
-    source_map = {}
-    for module in report.get("modules", []):
-        for key, label in (("java", "Java"), ("spring_boot", "Spring Boot")):
-            evidence = module.get(key, {}).get("evidence", [])
-            source_map[(module.get("path"), label)] = evidence[0].get("source") if evidence else None
+    """Return only components that require action or review; summarize clean components."""
+    scan_info = report.get("version_intelligence", {})
+    online = scan_info.get("status") != "SKIPPED"
+    review_by_key = {}
+    dependency_occurrences = 0
+    components_ok = 0
+    version_check_values = []
+    vulnerability_check_values = []
+    lifecycle_check_values = []
 
-    technologies = []
-    for module in report.get("modules", []):
-        for key, label in (("java", "Java"), ("spring_boot", "Spring Boot")):
-            finding_data = module.get(key, {})
-            update = module.get("technology_updates", {}).get(key, {})
-            current = finding_data.get("version")
-            recommended = update.get("recommended_version")
-            lifecycle = update.get("lifecycle", {}).get("status", "NOT_CHECKED")
-            tech_status = finding_data.get("status", "NOT_DETECTED")
-            if current and recommended and version_numbers(current) and version_numbers(recommended) and compare_versions(current, recommended) < 0:
-                update_status = "UPDATE_AVAILABLE"
+    def add_issue(item, issue):
+        issue = {key: value for key, value in issue.items() if value is not None and value != "" and value != []}
+        if issue not in item["issues"]:
+            item["issues"].append(issue)
+
+    def new_item(module, component, category, current_version=None, source=None):
+        key = (module, component, category)
+        if key not in review_by_key:
+            review_by_key[key] = {
+                "module": module,
+                "component": component,
+                "category": category,
+                "current_version": current_version,
+                "source_file": source,
+                "issues": [],
+            }
+        elif not review_by_key[key].get("current_version") and current_version:
+            review_by_key[key]["current_version"] = current_version
+        if source and not review_by_key[key].get("source_file"):
+            review_by_key[key]["source_file"] = source
+        return review_by_key[key]
+
+    def add_version_review(item, issue_type, message, latest=None, source_url=None):
+        add_issue(item, {
+            "type": issue_type,
+            "severity": "REVIEW",
+            "message": message,
+            "latest_version": latest,
+            "source_url": source_url,
+        })
+
+    modules = report.get("modules", [])
+    module_count = report.get("module_count", len(modules))
+    component_count_by_module = {}
+    clean_component_keys = set()
+    technology_count = 0
+    technology_conflicts = {
+        (item.get("technology"), tuple(item.get("versions", [])))
+        for item in report.get("version_inconsistencies", [])
+    }
+
+    # Technology checks: only expose Java/Spring Boot when it needs attention.
+    for module in modules:
+        module_path = module.get("path", ".")
+        module_component_count = len(module.get("dependencies", []))
+        component_count_by_module[module_path] = module_component_count
+        for field, label in (("java", "Java"), ("spring_boot", "Spring Boot")):
+            found = module.get(field, {})
+            intelligence = module.get("technology_updates", {}).get(field, {})
+            current = found.get("version")
+            recommended = intelligence.get("recommended_version")
+            lifecycle_data = intelligence.get("lifecycle", {})
+            lifecycle = lifecycle_data.get("status", "NOT_CHECKED")
+            status = found.get("status", "NOT_DETECTED")
+            if current:
+                technology_count += 1
+
+            item = None
+            if status == "CONFLICT":
+                item = new_item(module_path, label, "technology", current, None)
+                add_issue(item, {
+                    "type": "VERSION_CONFLICT",
+                    "severity": "REVIEW",
+                    "message": "Multiple versions of this technology were detected in this module.",
+                    "versions": found.get("candidates", []),
+                })
             elif current and recommended and version_numbers(current) and version_numbers(recommended):
-                update_status = "CURRENT_OR_NEWER"
-            elif current and recommended:
-                update_status = "VERSION_COMPARISON_UNCERTAIN"
-            elif current:
-                update_status = "RECOMMENDATION_UNAVAILABLE"
-            else:
-                update_status = tech_status
-            technologies.append({
-                "module": module.get("path"),
-                "name": label,
-                "current_version": current,
-                "recommended_version": recommended,
-                "status": update_status,
-                "lifecycle": lifecycle,
-                "support_end_date": update.get("lifecycle", {}).get("eol_date"),
-                "source": source_map.get((module.get("path"), label)),
-                "source_url": update.get("lifecycle", {}).get("source_url"),
-            })
+                if compare_versions(current, recommended) < 0:
+                    item = new_item(module_path, label, "technology", current, None)
+                    add_issue(item, {
+                        "type": "UPDATE_AVAILABLE",
+                        "severity": "REVIEW",
+                        "message": "A newer stable/LTS reference was found; confirm compatibility before updating.",
+                        "recommended_version": recommended,
+                        "source_url": intelligence.get("source_url"),
+                    })
+            elif current and recommended and (not version_numbers(current) or not version_numbers(recommended)):
+                item = new_item(module_path, label, "technology", current, None)
+                add_version_review(item, "VERSION_COMPARISON_UNCERTAIN", "The detected version cannot be compared reliably with the recommended version.", recommended, intelligence.get("source_url"))
+            elif not current and label == "Java" and module_component_count:
+                item = new_item(module_path, label, "technology", None, None)
+                add_version_review(item, "VERSION_NOT_DETECTED", "No Java version was detected in this module's build configuration.")
 
-    dependencies = []
-    alerts = []
-    latest_check_statuses = []
-    lifecycle_check_statuses = []
-    vulnerability_check_statuses = []
+            if current and lifecycle in {"EOL", "NOT_MAINTAINED", "OSS_SUPPORT_ENDED_EXTENDED_SUPPORT_AVAILABLE"}:
+                item = item or new_item(module_path, label, "technology", current, None)
+                add_issue(item, {
+                    "type": "LIFECYCLE_WARNING",
+                    "severity": "HIGH" if lifecycle == "EOL" else "WARNING",
+                    "message": "Lifecycle status: " + lifecycle,
+                    "support_end_date": lifecycle_data.get("eol_date"),
+                    "source_url": lifecycle_data.get("source_url") or intelligence.get("source_url"),
+                })
 
-    for module in report.get("modules", []):
+            if not online and current:
+                version_check_values.append("SKIPPED")
+                lifecycle_check_values.append("SKIPPED")
+
+    dependency_total = 0
+    dependency_ok = 0
+    plugin_total = 0
+    conflict_items = []
+
+    # Conflicts are review items; do not repeat the full dependency inventory.
+    for conflict in report.get("dependency_version_conflicts", []):
+        coordinate = conflict.get("component", "unknown")
+        versions = conflict.get("versions", [])
+        # The conflict can cross modules, so represent it as one project-level finding.
+        item = new_item("*", coordinate, "dependency")
+        add_issue(item, {
+            "type": "VERSION_CONFLICT",
+            "severity": "REVIEW",
+            "message": "Different versions of the same component were found across modules.",
+            "versions": versions,
+        })
+        conflict_items.append({"component": coordinate, "versions": versions, "status": "VERSION_CONFLICT"})
+
+    for inconsistency in report.get("version_inconsistencies", []):
+        coordinate = inconsistency.get("technology", "technology")
+        versions = inconsistency.get("versions", [])
+        item = new_item("*", coordinate, "technology")
+        add_issue(item, {
+            "type": "VERSION_CONFLICT",
+            "severity": "REVIEW",
+            "message": "Different versions were detected across modules.",
+            "versions": versions,
+        })
+        conflict_items.append({"component": coordinate, "versions": versions, "status": "VERSION_VARIATION_ACROSS_MODULES"})
+
+    # Analyze each component, but only retain actionable or uncertain findings.
+    for module in modules:
+        module_path = module.get("path", ".")
         for component in module.get("dependencies", []):
+            dependency_total += 1
+            if component.get("component_type") == "build_plugin":
+                plugin_total += 1
+
             intelligence = component.get("version_intelligence", {})
             current = component.get("version")
             latest = intelligence.get("latest_version")
             update_available = intelligence.get("update_available")
             lookup_status = intelligence.get("status", "NOT_CHECKED")
-            vulnerabilities = intelligence.get("vulnerabilities", [])
             vuln_status = intelligence.get("vulnerability_status", "NOT_CHECKED")
+            vulnerabilities = intelligence.get("vulnerabilities", [])
             lifecycle_data = intelligence.get("lifecycle", {})
             lifecycle = lifecycle_data.get("status", "NOT_CHECKED")
+            deprecation = intelligence.get("deprecation", {})
             coordinate = (component.get("group_id") or "unknown") + ":" + (component.get("artifact_id") or "unknown")
-            component_type = component.get("component_type", "dependency")
+            item = None
+            component_has_problem = False
 
             if update_available is True:
-                status = "UPDATE_AVAILABLE"
-            elif update_available is False and lookup_status not in {"CURRENT_VERSION_NEWER_THAN_REGISTRY", "COMPARISON_UNSUPPORTED"}:
-                status = "CURRENT"
-            elif lookup_status in {"CURRENT_VERSION_NEWER_THAN_REGISTRY", "COMPARISON_UNSUPPORTED"}:
-                status = "VERSION_COMPARISON_UNCERTAIN"
+                item = new_item(module_path, coordinate, "dependency", current, component.get("source"))
+                add_issue(item, {
+                    "type": "UPDATE_AVAILABLE",
+                    "severity": "REVIEW",
+                    "message": "A newer stable release is available; compatibility has not been assessed.",
+                    "recommended_version": latest,
+                    "source_url": intelligence.get("latest_source_url"),
+                })
+                component_has_problem = True
             elif not current:
-                status = "VERSION_UNKNOWN"
-            elif lookup_status in {"UNAVAILABLE", "NOT_FOUND", "NO_STABLE_RELEASE_FOUND"}:
-                status = "VERSION_CHECK_UNAVAILABLE"
-            elif lookup_status == "NOT_SUPPORTED_BY_MAVEN_CENTRAL_LOOKUP":
-                status = "VERSION_CHECK_NOT_SUPPORTED"
-            else:
-                status = "NOT_VERIFIED"
+                item = new_item(module_path, coordinate, "dependency", current, component.get("source"))
+                add_version_review(item, "VERSION_UNKNOWN", "The dependency version could not be resolved from the project configuration.")
+                component_has_problem = True
+            elif online and lookup_status in {"UNAVAILABLE", "NOT_FOUND", "NO_STABLE_RELEASE_FOUND"}:
+                item = new_item(module_path, coordinate, "dependency", current, component.get("source"))
+                add_version_review(item, "VERSION_CHECK_INCOMPLETE", "The latest release could not be verified from the configured version source.", source_url=intelligence.get("latest_source_url"))
+                component_has_problem = True
+            elif online and lookup_status == "NOT_SUPPORTED_BY_MAVEN_CENTRAL_LOOKUP":
+                item = new_item(module_path, coordinate, "dependency", current, component.get("source"))
+                add_version_review(item, "VERSION_CHECK_NOT_SUPPORTED", "This component is not supported by the Maven Central version lookup; verify its publisher or repository.")
+                component_has_problem = True
+            elif online and lookup_status in {"COMPARISON_UNSUPPORTED", "CURRENT_VERSION_NEWER_THAN_REGISTRY"}:
+                item = new_item(module_path, coordinate, "dependency", current, component.get("source"))
+                add_version_review(item, "VERSION_COMPARISON_UNCERTAIN", "The current and latest versions could not be compared confidently.", latest, intelligence.get("latest_source_url"))
+                component_has_problem = True
+            elif online and lookup_status not in {"FOUND"} and update_available is not False:
+                item = new_item(module_path, coordinate, "dependency", current, component.get("source"))
+                add_version_review(item, "VERSION_NOT_VERIFIED", "The analyzer could not confirm whether this version is current.", latest, intelligence.get("latest_source_url"))
+                component_has_problem = True
 
-            compact_vulnerabilities = []
-            for vulnerability in vulnerabilities:
-                compact_vulnerability = {
-                    "id": vulnerability.get("id"),
-                    "severity": vulnerability.get("severity"),
-                }
-                fixed = vulnerability.get("fixed_versions") or []
-                if fixed:
-                    compact_vulnerability["fixed_in"] = fixed
-                compact_vulnerabilities.append(compact_vulnerability)
-                alerts.append({
-                    "type": "KNOWN_VULNERABILITY",
-                    "severity": vulnerability.get("severity") or "UNKNOWN",
-                    "module": module.get("path"),
-                    "component": coordinate,
-                    "current_version": current,
-                    "advisory": vulnerability.get("id"),
-                    "fixed_in": fixed,
-                    "message": (vulnerability.get("summary") or "Known vulnerability advisory.")[:160],
-                    "source_url": vulnerability.get("source_url"),
-                })
-
-            if vuln_status == "VULNERABLE" and not vulnerabilities:
-                vuln_status = "DETAILS_UNAVAILABLE"
-            elif vuln_status == "NO_MATCHING_ADVISORIES":
-                vuln_status = "NO_ADVISORY_REPORTED"
-            elif vuln_status == "UNAVAILABLE":
-                vuln_status = "CHECK_UNAVAILABLE"
-
-            deprecation = intelligence.get("deprecation", {})
-            if deprecation.get("status") not in {None, "NOT_VERIFIED"}:
-                alerts.append({
-                    "type": deprecation.get("status"),
-                    "severity": "WARNING",
-                    "module": module.get("path"),
-                    "component": coordinate,
-                    "current_version": current,
-                    "message": deprecation.get("reason") or deprecation.get("name") or "Maintenance advisory reported.",
-                    "recommended_alternative": deprecation.get("recommended_alternative"),
-                    "source_url": deprecation.get("source_url"),
-                })
+            if vulnerabilities:
+                item = item or new_item(module_path, coordinate, "dependency", current, component.get("source"))
+                for vulnerability in vulnerabilities:
+                    add_issue(item, {
+                        "type": "KNOWN_VULNERABILITY",
+                        "severity": vulnerability.get("severity") or "UNKNOWN",
+                        "advisory": vulnerability.get("id"),
+                        "message": (vulnerability.get("summary") or "A known vulnerability advisory matches this version.")[:160],
+                        "fixed_in": vulnerability.get("fixed_versions") or None,
+                        "source_url": vulnerability.get("source_url"),
+                    })
+                component_has_problem = True
+            elif online and current and vuln_status in {"UNAVAILABLE", "CHECK_UNAVAILABLE", "DETAILS_UNAVAILABLE"}:
+                item = item or new_item(module_path, coordinate, "dependency", current, component.get("source"))
+                add_version_review(item, "SECURITY_CHECK_INCOMPLETE", "The vulnerability check did not complete; security status is unknown.")
+                component_has_problem = True
+            elif online and current and vuln_status in {"NOT_CHECKED", "VERSION_NOT_RESOLVED", "SKIPPED"}:
+                item = item or new_item(module_path, coordinate, "dependency", current, component.get("source"))
+                add_version_review(item, "SECURITY_CHECK_INCOMPLETE", "This component was not covered by the vulnerability check.")
+                component_has_problem = True
 
             if lifecycle in {"EOL", "NOT_MAINTAINED", "OSS_SUPPORT_ENDED_EXTENDED_SUPPORT_AVAILABLE"}:
-                alerts.append({
+                item = item or new_item(module_path, coordinate, "dependency", current, component.get("source"))
+                add_issue(item, {
                     "type": "LIFECYCLE_WARNING",
-                    "severity": "WARNING",
-                    "module": module.get("path"),
-                    "component": coordinate,
-                    "current_version": current,
+                    "severity": "HIGH" if lifecycle == "EOL" else "WARNING",
                     "message": "Lifecycle status: " + lifecycle,
                     "support_end_date": lifecycle_data.get("eol_date"),
                     "source_url": lifecycle_data.get("source_url"),
                 })
+                component_has_problem = True
 
-            dependencies.append({
-                "module": module.get("path"),
-                "component": coordinate,
-                "type": component_type,
-                "version": current,
-                "latest_stable": latest,
-                "status": status,
-                "vulnerability_status": vuln_status,
-                "vulnerability_count": len(compact_vulnerabilities),
-                "lifecycle": lifecycle,
-                "source": component.get("source"),
-            })
+            if deprecation.get("status") not in {None, "NOT_VERIFIED"}:
+                item = item or new_item(module_path, coordinate, "dependency", current, component.get("source"))
+                add_issue(item, {
+                    "type": deprecation.get("status"),
+                    "severity": "WARNING",
+                    "message": deprecation.get("reason") or deprecation.get("name") or "A maintenance advisory applies.",
+                    "recommended_alternative": deprecation.get("recommended_alternative"),
+                    "source_url": deprecation.get("source_url"),
+                })
+                component_has_problem = True
 
-            if current and component.get("latest_lookup_supported") is not False:
-                latest_check_statuses.append(lookup_status)
-            if lifecycle != "NOT_CHECKED":
-                lifecycle_check_statuses.append(lifecycle)
-            if current:
-                vulnerability_check_statuses.append(vuln_status)
+            if online:
+                if current and lookup_status in {"FOUND"}:
+                    version_check_values.append("CHECKED")
+                elif not current or lookup_status not in {"FOUND"}:
+                    version_check_values.append("INCOMPLETE")
 
-    for technology in technologies:
-        if technology.get("lifecycle") in {"EOL", "NOT_MAINTAINED", "OSS_SUPPORT_ENDED_EXTENDED_SUPPORT_AVAILABLE"}:
-            alerts.append({
-                "type": "LIFECYCLE_WARNING",
-                "severity": "WARNING",
-                "module": technology.get("module"),
-                "component": technology.get("name"),
-                "current_version": technology.get("current_version"),
-                "message": "Lifecycle status: " + str(technology.get("lifecycle")),
-                "support_end_date": technology.get("support_end_date"),
-                "source_url": technology.get("source_url"),
-            })
+                if current and vuln_status == "NO_MATCHING_ADVISORIES":
+                    vulnerability_check_values.append("CHECKED")
+                elif vuln_status in {"VULNERABLE"} and vulnerabilities:
+                    vulnerability_check_values.append("CHECKED")
+                else:
+                    vulnerability_check_values.append("INCOMPLETE")
 
-    # Keep cross-module version differences separate from component update rows.
-    conflict_list = []
-    for item in report.get("dependency_version_conflicts", []):
-        conflict_list.append({
-            "component": item.get("component"),
-            "versions": item.get("versions", []),
-            "status": "VERSION_CONFLICT",
-        })
-    for item in report.get("version_inconsistencies", []):
-        conflict_list.append({
-            "component": item.get("technology"),
-            "versions": item.get("versions", []),
-            "status": "VERSION_VARIATION_ACROSS_MODULES",
-        })
+                if lifecycle not in {"NOT_CHECKED", "UNAVAILABLE", "NOT_CATALOGUED", "CYCLE_NOT_FOUND", "UNKNOWN"}:
+                    lifecycle_check_values.append("CHECKED")
+                elif lifecycle in {"UNAVAILABLE", "NOT_CATALOGUED", "CYCLE_NOT_FOUND"}:
+                    lifecycle_check_values.append("INCOMPLETE")
 
-    def compact_check_status(values, skipped=False):
-        if skipped:
+            # A component is OK only when its version and security checks ran,
+            # no update is pending, and no lifecycle/maintenance issue was found.
+            if (
+                online
+                and not component_has_problem
+                and current
+                and update_available is False
+                and vuln_status in {"NO_MATCHING_ADVISORIES", "NO_ADVISORY_REPORTED"}
+            ):
+                dependency_ok += 1
+
+    # Normalize technology and component issues, and group repeated issues by component.
+    review_items = []
+    for item in review_by_key.values():
+        if not item["issues"]:
+            continue
+        item["issues"] = sorted(
+            item["issues"],
+            key=lambda issue: (
+                {"CRITICAL": 0, "HIGH": 1, "WARNING": 2, "REVIEW": 3, "UNKNOWN": 4, "INFO": 5}.get(issue.get("severity"), 6),
+                issue.get("type", ""),
+            ),
+        )
+        item["recommended_action"] = "; ".join(dict.fromkeys(
+            action for action in (
+                "Update and verify compatibility" if any(issue.get("type") == "UPDATE_AVAILABLE" for issue in item["issues"]) else None,
+                "Review the security advisory and upgrade to a fixed version" if any(issue.get("type") == "KNOWN_VULNERABILITY" for issue in item["issues"]) else None,
+                "Review support status and plan an upgrade" if any(issue.get("type") == "LIFECYCLE_WARNING" for issue in item["issues"]) else None,
+                "Manually verify the version or check coverage" if any(issue.get("type") in {"VERSION_UNKNOWN", "VERSION_NOT_VERIFIED", "VERSION_CHECK_INCOMPLETE", "VERSION_CHECK_NOT_SUPPORTED", "VERSION_COMPARISON_UNCERTAIN", "VERSION_NOT_DETECTED", "SECURITY_CHECK_INCOMPLETE"} for issue in item["issues"]) else None,
+                "Resolve the version conflict" if any(issue.get("type") == "VERSION_CONFLICT" for issue in item["issues"]) else None,
+                "Review the recommended alternative" if any(issue.get("recommended_alternative") for issue in item["issues"]) else None,
+            ) if action
+        ))
+        review_items.append(item)
+
+    # Sort higher-risk findings first, then keep output deterministic.
+    severity_rank = {"CRITICAL": 0, "HIGH": 1, "WARNING": 2, "REVIEW": 3, "UNKNOWN": 4, "INFO": 5}
+    review_items.sort(key=lambda item: (
+        min((severity_rank.get(issue.get("severity"), 6) for issue in item["issues"]), default=6),
+        item.get("module", ""),
+        item.get("component", ""),
+    ))
+
+    # Online checking is not the same as having complete coverage.
+    def check_state(values, online_enabled):
+        if not online_enabled:
             return "SKIPPED"
         if not values:
             return "NOT_APPLICABLE"
-        if any(value in {"UNAVAILABLE", "NOT_FOUND", "NO_STABLE_RELEASE_FOUND", "CHECK_UNAVAILABLE", "VERSION_CHECK_UNAVAILABLE", "VERSION_UNKNOWN", "VERSION_NOT_RESOLVED"} for value in values):
+        if any(value == "INCOMPLETE" for value in values):
             return "PARTIAL"
-        if any(value in {"NOT_CATALOGUED", "CYCLE_NOT_FOUND", "NOT_SUPPORTED_BY_MAVEN_CENTRAL_LOOKUP", "VERSION_CHECK_NOT_SUPPORTED", "NOT_VERIFIED", "COMPARISON_UNSUPPORTED", "CURRENT_VERSION_NEWER_THAN_REGISTRY"} for value in values):
-            return "AVAILABLE_WITH_GAPS"
         return "CHECKED"
 
-    scan_info = report.get("version_intelligence", {})
-    online = scan_info.get("status") != "SKIPPED"
-    if online:
-        for technology in technologies:
-            if technology.get("current_version"):
-                latest_check_statuses.append(
-                    "FOUND" if technology.get("recommended_version") else "UNAVAILABLE"
-                )
-            if technology.get("current_version") and technology.get("lifecycle") != "NOT_CHECKED":
-                lifecycle_check_statuses.append(technology.get("lifecycle"))
-    version_check = compact_check_status(latest_check_statuses, skipped=not online)
-
-    raw_vulnerability_status = scan_info.get("vulnerability_scan", {}).get("status", "SKIPPED")
-    unversioned_count = sum(1 for item in dependencies if not item.get("version"))
-    unsupported_release_count = sum(
-        1 for module in report.get("modules", [])
-        for component in module.get("dependencies", [])
-        if component.get("version") and component.get("latest_lookup_supported") is False
-    )
-    if online and dependencies and (unversioned_count or unsupported_release_count) and version_check in {"CHECKED", "NOT_APPLICABLE"}:
-        version_check = "AVAILABLE_WITH_GAPS"
+    version_check = check_state(version_check_values, online)
+    vulnerability_check = check_state(vulnerability_check_values, online)
+    lifecycle_check = check_state(lifecycle_check_values, online)
 
     if not online:
-        vulnerability_check = "SKIPPED"
-    elif not dependencies:
-        vulnerability_check = "NOT_APPLICABLE"
-    elif raw_vulnerability_status == "PARTIAL" or any(
-        status in {"UNAVAILABLE", "CHECK_UNAVAILABLE", "DETAILS_UNAVAILABLE"}
-        for status in vulnerability_check_statuses
-    ):
-        vulnerability_check = "PARTIAL"
-    elif (
-        not vulnerability_check_statuses
-        or unversioned_count
-        or any(status in {"NOT_CHECKED", "VERSION_NOT_RESOLVED", "SKIPPED"} for status in vulnerability_check_statuses)
-    ):
-        vulnerability_check = "AVAILABLE_WITH_GAPS"
-    elif raw_vulnerability_status in {"COMPLETE", "NO_VERSIONED_COMPONENTS"}:
-        vulnerability_check = "CHECKED"
+        overall_status = "CHECK_INCOMPLETE"
+        status_message = "Online checks were skipped; no components are being marked OK."
+    elif report.get("module_count", 0) == 0:
+        overall_status = "NO_BUILD_FILES"
+        status_message = "No supported build files were found."
+    elif review_items:
+        overall_status = "REVIEW_REQUIRED"
+        status_message = str(len(review_items)) + " component(s) need review; components with no detected issues are summarized as OK."
+    elif any(value in {"PARTIAL", "SKIPPED"} for value in (version_check, vulnerability_check, lifecycle_check)):
+        overall_status = "CHECK_INCOMPLETE"
+        status_message = "No issues were flagged in completed checks, but some checks were incomplete."
     else:
-        vulnerability_check = raw_vulnerability_status
-    lifecycle_check = (
-        "SKIPPED" if not online else
-        "NOT_APPLICABLE" if not lifecycle_check_statuses else
-        compact_check_status(lifecycle_check_statuses)
+        overall_status = "OK"
+        status_message = "All checked components look OK."
+
+    known_issues = sum(
+        1 for item in review_items for issue in item["issues"]
+        if issue.get("type") == "KNOWN_VULNERABILITY"
     )
+    update_items = sum(
+        1 for item in review_items for issue in item["issues"]
+        if issue.get("type") == "UPDATE_AVAILABLE"
+    )
+    lifecycle_items = sum(
+        1 for item in review_items for issue in item["issues"]
+        if issue.get("type") == "LIFECYCLE_WARNING"
+    )
+    conflict_count = sum(
+        1 for item in review_items for issue in item["issues"]
+        if issue.get("type") == "VERSION_CONFLICT"
+    )
+    java_spring_found = sum(
+        1 for module in modules for key in ("java", "spring_boot")
+        if module.get(key, {}).get("version")
+    )
+    scanned_components = dependency_total + technology_count
 
-    resolution_statuses = [
-        module.get("dependency_resolution", {}).get("status", "NOT_REQUESTED")
-        for module in report.get("modules", [])
-    ]
-    if not report.get("dependency_resolution_requested"):
-        resolution_check = "STATIC_ONLY"
-    elif any(status in {"TOOL_NOT_FOUND", "TIMEOUT", "FAILED"} for status in resolution_statuses):
-        resolution_check = "FAILED_OR_PARTIAL"
-    elif any(status == "PARTIAL" for status in resolution_statuses):
-        resolution_check = "PARTIAL"
-    elif resolution_statuses and all(status in {"RESOLVED", "NOT_APPLICABLE"} for status in resolution_statuses):
-        resolution_check = "RESOLVED"
-    else:
-        resolution_check = "NOT_CONFIRMED"
-
-    unique_vulnerable = {
-        (item.get("module"), item.get("component"), item.get("version"))
-        for item in dependencies if item.get("vulnerability_count", 0) > 0
-    }
-    unique_outdated = {
-        (item.get("module"), item.get("component"), item.get("version"))
-        for item in dependencies if item.get("status") == "UPDATE_AVAILABLE"
-    }
-    vulnerability_alert_count = sum(item.get("vulnerability_count", 0) for item in dependencies)
-    dependency_count = sum(1 for item in dependencies if item.get("type") == "dependency")
-    plugin_count = sum(1 for item in dependencies if item.get("type") == "build_plugin")
-    warning_count = sum(1 for item in alerts if item.get("severity") in {"HIGH", "CRITICAL", "WARNING"})
-    no_build_files = report.get("module_count", 0) == 0
-
-    # Keep optional fields out of the public schema when no value was detected.
-    cleaned_technologies = [
-        {key: value for key, value in item.items() if value is not None and value != [] and value != ""}
-        for item in technologies
-        if not (item.get("name") == "Spring Boot" and item.get("status") == "NOT_DETECTED")
-    ]
+    no_build_files = module_count == 0
     scan = {
-        "completed_at": scan_info.get("checked_at"),
         "mode": "ONLINE" if online else "OFFLINE",
         "build_system": report.get("build_system", "Unknown"),
-        "dependency_resolution": resolution_check,
+        "dependency_resolution": (
+            "RESOLVED" if report.get("dependency_resolution_requested") and
+            all(module.get("dependency_resolution", {}).get("status") in {"RESOLVED", "NOT_APPLICABLE"} for module in modules)
+            else "REQUESTED_BUT_INCOMPLETE" if report.get("dependency_resolution_requested")
+            else "STATIC_ONLY"
+        ),
         "project_detected": not no_build_files,
-        "warning": "No Maven, Gradle, or Ant build file was found." if no_build_files else None,
     }
-    scan = {key: value for key, value in scan.items() if value is not None and value != ""}
+    if no_build_files:
+        scan["warning"] = "No Maven, Gradle, or Ant build file was found."
 
-    # Keep alert entries compact and stable; remove empty fields that do not help a consumer.
-    cleaned_alerts = []
-    for alert in alerts:
-        cleaned_alerts.append({key: value for key, value in alert.items() if value is not None and value != [] and value != ""})
-    cleaned_dependencies = []
-    for item in dependencies:
-        cleaned = {key: value for key, value in item.items() if value is not None and value != [] and value != ""}
-        cleaned_dependencies.append(cleaned)
+    components_needing_review = len(review_items)
+    # Do not count components as OK when online checks were skipped or incomplete.
+    components_ok = dependency_ok if online else 0
+    if online:
+        components_ok += sum(
+            1 for module in modules
+            for key in ("java", "spring_boot")
+            if module.get(key, {}).get("version")
+            and not any(
+                item.get("module") == module.get("path")
+                and item.get("category") == "technology"
+                and item.get("component") == ("Java" if key == "java" else "Spring Boot")
+                for item in review_items
+            )
+            and module.get(key, {}).get("status") != "CONFLICT"
+        )
 
     return {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "project": report.get("project"),
         "scan": scan,
         "summary": {
-            "modules": report.get("module_count", 0),
-            "dependencies": dependency_count,
-            "build_plugins": plugin_count,
-            "updates_available": len(unique_outdated),
-            "technology_updates_available": sum(1 for item in technologies if item.get("status") == "UPDATE_AVAILABLE"),
-            "vulnerable_components": len(unique_vulnerable),
-            "known_vulnerability_advisories": vulnerability_alert_count,
-            "lifecycle_warnings": sum(1 for alert in cleaned_alerts if alert.get("type") == "LIFECYCLE_WARNING"),
-            "maintenance_advisories": sum(1 for alert in cleaned_alerts if alert.get("type") in {"MAINTENANCE_MODE"}),
-            "version_conflicts": len(conflict_list),
-            "alerts": len(cleaned_alerts),
+            "status": overall_status,
+            "message": status_message,
+            "modules": module_count,
+            "components_scanned": scanned_components,
+            "components_ok": components_ok,
+            "components_needing_review": components_needing_review,
+            "updates_available": update_items,
+            "known_vulnerabilities": known_issues,
+            "lifecycle_warnings": lifecycle_items,
+            "version_conflicts": conflict_count,
         },
-        "technologies": cleaned_technologies,
-        "dependencies": cleaned_dependencies,
-        "alerts": cleaned_alerts,
-        "version_conflicts": conflict_list,
+        "review_items": review_items,
         "checks": {
             "latest_versions": version_check,
             "vulnerabilities": vulnerability_check,
