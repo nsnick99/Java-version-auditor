@@ -1433,6 +1433,8 @@ def compact_report(report):
         (item.get("technology"), tuple(item.get("versions", [])))
         for item in report.get("version_inconsistencies", [])
     }
+    conflicted_technology_names = {item.get("technology") for item in report.get("version_inconsistencies", [])}
+    conflicted_components = {item.get("component") for item in report.get("dependency_version_conflicts", [])}
 
     # Technology checks: only expose Java/Spring Boot when it needs attention.
     for module in modules:
@@ -1486,9 +1488,16 @@ def compact_report(report):
                     "source_url": lifecycle_data.get("source_url") or intelligence.get("source_url"),
                 })
 
-            if not online and current:
-                version_check_values.append("SKIPPED")
-                lifecycle_check_values.append("SKIPPED")
+            if current:
+                if online:
+                    version_check_values.append("CHECKED" if recommended else "INCOMPLETE")
+                    if lifecycle in {"MAINTAINED", "EOL", "NOT_MAINTAINED", "OSS_SUPPORT_ENDED_EXTENDED_SUPPORT_AVAILABLE"}:
+                        lifecycle_check_values.append("CHECKED")
+                    elif lifecycle in {"UNAVAILABLE", "NOT_CATALOGUED", "CYCLE_NOT_FOUND", "UNKNOWN"}:
+                        lifecycle_check_values.append("INCOMPLETE")
+                else:
+                    version_check_values.append("SKIPPED")
+                    lifecycle_check_values.append("SKIPPED")
 
     dependency_total = 0
     dependency_ok = 0
@@ -1541,7 +1550,7 @@ def compact_report(report):
             deprecation = intelligence.get("deprecation", {})
             coordinate = (component.get("group_id") or "unknown") + ":" + (component.get("artifact_id") or "unknown")
             item = None
-            component_has_problem = False
+            component_has_problem = coordinate in conflicted_components
 
             if update_available is True:
                 item = new_item(module_path, coordinate, "dependency", current, component.get("source"))
@@ -1760,6 +1769,7 @@ def compact_report(report):
                 for item in review_items
             )
             and module.get(key, {}).get("status") != "CONFLICT"
+            and ("Java" if key == "java" else "Spring Boot") not in conflicted_technology_names
         )
 
     return {
