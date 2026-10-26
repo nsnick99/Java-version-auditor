@@ -1,69 +1,61 @@
 # Java Version Auditor
 
-A focused Java project version auditor. It reports the technologies and dependency versions found, whether newer versions are available, known vulnerability alerts, lifecycle warnings, and version conflicts. It does **not** calculate migration readiness.
+A focused Java project auditor that lists **only components needing attention**. Components with no detected issue are summarized as OK instead of being repeated in the report. It does not calculate an overall migration-readiness score.
 
 ## Run
-
-Online checks are enabled by default:
 
 ~~~bash
 python main.py /path/to/java-project
 ~~~
 
-Save the concise JSON report:
+Save the report to a JSON file:
 
 ~~~bash
 python main.py /path/to/java-project --output audit-report.json
 ~~~
 
-Skip external checks:
+Skip online checks:
 
 ~~~bash
 python main.py /path/to/java-project --offline
 ~~~
 
-Ask Maven/Gradle to resolve transitive dependencies (optional):
+Resolve Maven/Gradle transitive dependencies (optional):
 
 ~~~bash
 python main.py /path/to/java-project --resolve
 ~~~
 
-Use Python 3.8+. No third-party Python packages are required. Maven or Gradle is only needed for --resolve.
+Use Python 3.8+. No third-party Python packages are required. Maven or Gradle is required only for --resolve.
 
-## Output
+## Report format
 
-The JSON uses a stable, concise schema:
+- summary: overall result, counts of components scanned/OK/needing review, and issue counts
+- review_items: only components with updates, known vulnerabilities, lifecycle warnings, version conflicts, unresolved versions, or incomplete checks
+- checks: whether version, vulnerability, and lifecycle checks completed
 
-- summary: module/dependency counts, updates, vulnerability alerts, lifecycle warnings, and version conflicts
-- technologies: Java and Spring Boot current/recommended version per module
-- dependencies: component coordinates, current/latest version, status, vulnerability summaries, lifecycle status, and source file
-- alerts: vulnerability, lifecycle, and maintenance advisories; update versions are already shown on each dependency
-- version_conflicts: versions of the same component that differ across modules
-- checks: whether external checks were completed, skipped, or partially available
+If no issues are detected and checks completed, the summary says OK and reports that all checked components look OK. If online checks are skipped or incomplete, the report says CHECK_INCOMPLETE rather than claiming every component is clean.
 
-Statuses such as VERSION_CHECK_UNAVAILABLE, VERSION_UNKNOWN, NO_ADVISORY_REPORTED, and PARTIAL distinguish missing data from a clean result. The report omits large API payloads, repeated source metadata, and unnecessary request details.
+Each review item gives the module, component, current version, issue types, concise reasons, and a recommended action. Healthy components are not listed individually.
 
-## Data sources
+## Analysis sources
 
-- Maven Central metadata for latest stable published versions
+- Maven Central metadata for current stable releases
 - OSV.dev for known vulnerability advisories
 - endoflife.date for lifecycle data where a product/release cycle is catalogued
-- Eclipse Adoptium for a latest-LTS Java reference
-
-## Resolved dependencies and safety
-
-Static parsing may not discover transitive versions or remote BOM-managed versions. Use --resolve only for repositories you trust: it invokes Maven or Gradle and executes the project build configuration. It may download plugins and dependencies.
+- Eclipse Adoptium for the latest LTS Java reference
 
 ## Limitations
 
-- A newer version is not automatically compatible with the project. Major-version changes must be reviewed.
-- Maven Central checks do not cover private repositories or packages not published there.
-- Without --resolve, some transitive dependencies may be missing or unresolved.
-- Gradle static parsing supports common dependency notations and version catalogs, not every custom build convention.
-- No OSV match does not prove a component is vulnerability-free.
-- Lifecycle data is only available for products present in the selected dataset; Java support also depends on the JDK vendor.
-- Deprecation/maintenance status is only shown when there is a source-backed advisory. NOT_VERIFIED does not mean actively maintained.
+- A newer release is not automatically compatible; review release notes and tests before updating.
+- Maven Central checks do not cover private repositories.
+- Without --resolve, some transitive dependencies and remotely managed versions may not be discovered.
+- Gradle static parsing supports common dependency notations and version catalogs, not every custom convention.
+- No OSV match does not prove a dependency is vulnerability-free.
+- Lifecycle coverage depends on the available lifecycle dataset.
+- Maintenance/deprecation advisories are source-backed rules for known components, not a universal deprecation database.
+- --resolve executes Maven/Gradle project build configuration; use it only on trusted projects.
 
 ## Out of scope
 
-Migration readiness scores, migration blockers, migration planning, and rewrite estimates are intentionally excluded.
+The analyzer does not generate migration-readiness scores, migration paths, or automatic code changes.
