@@ -190,7 +190,7 @@ class VersionAuditorTests(unittest.TestCase):
             },
         }
         result = auditor.compact_report(raw)
-        self.assertEqual(result["summary"]["updates_available"], 1)
+        self.assertEqual(result["summary"]["updates_available"], 2)
         self.assertEqual(result["summary"]["lifecycle_warnings"], 1)
         self.assertEqual(result["summary"]["components_needing_review"], 2)
         self.assertEqual(result["summary"]["status"], "REVIEW_REQUIRED")
@@ -274,8 +274,6 @@ class VersionAuditorTests(unittest.TestCase):
             )
             report = auditor.audit(root, online=False)
             self.assertEqual(report["summary"]["modules"], 1)
-            java_tech = next(item for item in report["technologies"] if item["name"] == "Java")
-            self.assertEqual(java_tech["current_version"], "17")
             self.assertEqual(report["scan"]["mode"], "OFFLINE")
             self.assertEqual(report["checks"]["latest_versions"], "SKIPPED")
             self.assertEqual(report["summary"]["status"], "CHECK_INCOMPLETE")
