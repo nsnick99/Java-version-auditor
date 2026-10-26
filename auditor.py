@@ -1708,7 +1708,7 @@ def compact_report(report):
 
                 if lifecycle not in {"NOT_CHECKED", "UNAVAILABLE", "NOT_CATALOGUED", "CYCLE_NOT_FOUND", "UNKNOWN"}:
                     lifecycle_check_values.append("CHECKED")
-                elif lifecycle in {"UNAVAILABLE", "NOT_CATALOGUED", "CYCLE_NOT_FOUND"}:
+                elif lifecycle in {"UNAVAILABLE", "NOT_CATALOGUED", "CYCLE_NOT_FOUND", "UNKNOWN"}:
                     lifecycle_check_values.append("INCOMPLETE")
 
             # A component is OK only when its version and security checks ran,
