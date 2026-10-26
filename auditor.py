@@ -1022,6 +1022,7 @@ def osv_query_batch(items):
 
     results_by_key = {}
     errors = []
+    errors_by_key = {}
     batches = [queries[index:index + 100] for index in range(0, len(queries), 100)]
     for batch in batches:
         payload = {"queries": [{"package": item["package"], "version": item["version"]} for item in batch]}
@@ -1039,9 +1040,11 @@ def osv_query_batch(items):
                 vuln_ids = [vuln.get("id") for vuln in (results[index].get("vulns", []) if index < len(results) else []) if vuln.get("id")]
                 results_by_key[item["component_key"]] = vuln_ids
         except (urllib.error.URLError, TimeoutError, OSError, ValueError) as error:
-            errors.append(str(error)[:250])
+            error_message = str(error)[:250]
+            errors.append(error_message)
             for item in batch:
                 results_by_key[item["component_key"]] = None
+                errors_by_key[item["component_key"]] = error_message
 
     all_ids = sorted({vuln_id for vuln_ids in results_by_key.values() if vuln_ids for vuln_id in vuln_ids})
     details = {}
@@ -1060,7 +1063,11 @@ def osv_query_batch(items):
         key = item["component_key"]
         vuln_ids = results_by_key.get(key)
         if vuln_ids is None:
-            findings[key] = {"status": "UNAVAILABLE", "vulnerabilities": []}
+            findings[key] = {
+                "status": "UNAVAILABLE",
+                "vulnerabilities": [],
+                "message": errors_by_key.get(key) or "The OSV vulnerability query did not complete.",
+            }
             continue
         vulnerabilities = []
         for vuln_id in vuln_ids:
@@ -1265,6 +1272,7 @@ def enrich_report(report, online=True):
                 result["vulnerability_status"] = "NOT_CHECKED"
             else:
                 result["vulnerability_status"] = osv.get("status", "UNAVAILABLE")
+                result["vulnerability_message"] = osv.get("message")
                 result["vulnerabilities"] = osv.get("vulnerabilities", [])
                 for vuln in result["vulnerabilities"]:
                     vulnerability_findings.append({
@@ -1296,10 +1304,17 @@ def enrich_report(report, online=True):
                 "recommended_version": None,
                 "lifecycle": {"status": "NOT_CHECKED"},
                 "source_note": None,
+                "version_check_status": "SKIPPED" if not online else "NOT_CHECKED",
             }
             if online and detected:
                 if key == "spring_boot":
-                    latest = latest_map.get(("org.springframework.boot", "spring-boot-starter-parent"))
+                    latest = latest_map.get(
+                        ("org.springframework.boot", "spring-boot-starter-parent"),
+                        {"status": "UNAVAILABLE", "version": None},
+                    )
+                    technology["version_check_status"] = latest.get("status", "UNAVAILABLE")
+                    technology["source_url"] = latest.get("url")
+                    technology["lookup_message"] = latest.get("message")
                     if latest and latest.get("version"):
                         technology["recommended_version"] = latest["version"]
                         technology["source_url"] = latest.get("url")
@@ -1318,6 +1333,8 @@ def enrich_report(report, online=True):
                     technology["recommended_version"] = java_lts.get("recommended_version")
                     technology["source_url"] = java_lts.get("source_url")
                     technology["source_note"] = java_lts.get("basis")
+                    technology["version_check_status"] = java_lts.get("status", "UNAVAILABLE")
+                    technology["lookup_message"] = java_lts.get("message")
                     current_major = java_major(detected)
                     recommended = java_lts.get("recommended_version")
                     if current_major and recommended and current_major.isdigit() and recommended.isdigit() and int(current_major) < int(recommended):
@@ -1415,13 +1432,14 @@ def compact_report(report):
             review_by_key[key]["source_file"] = source
         return review_by_key[key]
 
-    def add_version_review(item, issue_type, message, latest=None, source_url=None):
+    def add_version_review(item, issue_type, message, latest=None, source_url=None, details=None):
         add_issue(item, {
             "type": issue_type,
             "severity": "REVIEW",
             "message": message,
             "latest_version": latest,
             "source_url": source_url,
+            "details": details,
         })
 
     modules = report.get("modules", [])
@@ -1474,6 +1492,17 @@ def compact_report(report):
             elif current and recommended and (not version_numbers(current) or not version_numbers(recommended)):
                 item = new_item(module_path, label, "technology", current, None)
                 add_version_review(item, "VERSION_COMPARISON_UNCERTAIN", "The detected version cannot be compared reliably with the recommended version.", recommended, intelligence.get("source_url"))
+            elif current and online and not recommended:
+                item = new_item(module_path, label, "technology", current, None)
+                lookup_status = intelligence.get("version_check_status", "UNAVAILABLE")
+                details = intelligence.get("lookup_message") or ("Lookup status: " + str(lookup_status))
+                add_version_review(
+                    item,
+                    "VERSION_CHECK_INCOMPLETE",
+                    "The recommended version could not be verified; this technology cannot be marked OK.",
+                    source_url=intelligence.get("source_url"),
+                    details=details,
+                )
             elif not current and label == "Java" and module_component_count:
                 item = new_item(module_path, label, "technology", None, None)
                 add_version_review(item, "VERSION_NOT_DETECTED", "No Java version was detected in this module's build configuration.")
@@ -1549,11 +1578,12 @@ def compact_report(report):
             lifecycle = lifecycle_data.get("status", "NOT_CHECKED")
             deprecation = intelligence.get("deprecation", {})
             coordinate = (component.get("group_id") or "unknown") + ":" + (component.get("artifact_id") or "unknown")
+            component_category = "build_plugin" if component.get("component_type") == "build_plugin" else "dependency"
             item = None
             component_has_problem = coordinate in conflicted_components
 
             if update_available is True:
-                item = new_item(module_path, coordinate, "dependency", current, component.get("source"))
+                item = new_item(module_path, coordinate, component_category, current, component.get("source"))
                 add_issue(item, {
                     "type": "UPDATE_AVAILABLE",
                     "severity": "REVIEW",
@@ -1563,28 +1593,34 @@ def compact_report(report):
                 })
                 component_has_problem = True
             elif not current:
-                item = new_item(module_path, coordinate, "dependency", current, component.get("source"))
+                item = new_item(module_path, coordinate, component_category, current, component.get("source"))
                 add_version_review(item, "VERSION_UNKNOWN", "The dependency version could not be resolved from the project configuration.")
                 component_has_problem = True
             elif online and lookup_status in {"UNAVAILABLE", "NOT_FOUND", "NO_STABLE_RELEASE_FOUND"}:
-                item = new_item(module_path, coordinate, "dependency", current, component.get("source"))
-                add_version_review(item, "VERSION_CHECK_INCOMPLETE", "The latest release could not be verified from the configured version source.", source_url=intelligence.get("latest_source_url"))
+                item = new_item(module_path, coordinate, component_category, current, component.get("source"))
+                add_version_review(
+                    item,
+                    "VERSION_CHECK_INCOMPLETE",
+                    "The latest release could not be verified from the configured version source.",
+                    source_url=intelligence.get("latest_source_url"),
+                    details=intelligence.get("lookup_message") or ("Lookup status: " + str(lookup_status)),
+                )
                 component_has_problem = True
             elif online and lookup_status == "NOT_SUPPORTED_BY_MAVEN_CENTRAL_LOOKUP":
-                item = new_item(module_path, coordinate, "dependency", current, component.get("source"))
+                item = new_item(module_path, coordinate, component_category, current, component.get("source"))
                 add_version_review(item, "VERSION_CHECK_NOT_SUPPORTED", "This component is not supported by the Maven Central version lookup; verify its publisher or repository.")
                 component_has_problem = True
             elif online and lookup_status in {"COMPARISON_UNSUPPORTED", "CURRENT_VERSION_NEWER_THAN_REGISTRY"}:
-                item = new_item(module_path, coordinate, "dependency", current, component.get("source"))
+                item = new_item(module_path, coordinate, component_category, current, component.get("source"))
                 add_version_review(item, "VERSION_COMPARISON_UNCERTAIN", "The current and latest versions could not be compared confidently.", latest, intelligence.get("latest_source_url"))
                 component_has_problem = True
             elif online and lookup_status not in {"FOUND"} and update_available is not False:
-                item = new_item(module_path, coordinate, "dependency", current, component.get("source"))
+                item = new_item(module_path, coordinate, component_category, current, component.get("source"))
                 add_version_review(item, "VERSION_NOT_VERIFIED", "The analyzer could not confirm whether this version is current.", latest, intelligence.get("latest_source_url"))
                 component_has_problem = True
 
             if vulnerabilities:
-                item = item or new_item(module_path, coordinate, "dependency", current, component.get("source"))
+                item = item or new_item(module_path, coordinate, component_category, current, component.get("source"))
                 for vulnerability in vulnerabilities:
                     add_issue(item, {
                         "type": "KNOWN_VULNERABILITY",
@@ -1596,16 +1632,26 @@ def compact_report(report):
                     })
                 component_has_problem = True
             elif online and current and vuln_status in {"UNAVAILABLE", "CHECK_UNAVAILABLE", "DETAILS_UNAVAILABLE"}:
-                item = item or new_item(module_path, coordinate, "dependency", current, component.get("source"))
-                add_version_review(item, "SECURITY_CHECK_INCOMPLETE", "The vulnerability check did not complete; security status is unknown.")
+                item = item or new_item(module_path, coordinate, component_category, current, component.get("source"))
+                add_version_review(
+                    item,
+                    "SECURITY_CHECK_INCOMPLETE",
+                    "The vulnerability check did not complete; security status is unknown.",
+                    details=intelligence.get("vulnerability_message") or ("Security check status: " + str(vuln_status)),
+                )
                 component_has_problem = True
             elif online and current and vuln_status in {"NOT_CHECKED", "VERSION_NOT_RESOLVED", "SKIPPED"}:
-                item = item or new_item(module_path, coordinate, "dependency", current, component.get("source"))
-                add_version_review(item, "SECURITY_CHECK_INCOMPLETE", "This component was not covered by the vulnerability check.")
+                item = item or new_item(module_path, coordinate, component_category, current, component.get("source"))
+                add_version_review(
+                    item,
+                    "SECURITY_CHECK_INCOMPLETE",
+                    "This component was not covered by the vulnerability check.",
+                    details=intelligence.get("vulnerability_message") or ("Security check status: " + str(vuln_status)),
+                )
                 component_has_problem = True
 
             if lifecycle in {"EOL", "NOT_MAINTAINED", "OSS_SUPPORT_ENDED_EXTENDED_SUPPORT_AVAILABLE"}:
-                item = item or new_item(module_path, coordinate, "dependency", current, component.get("source"))
+                item = item or new_item(module_path, coordinate, component_category, current, component.get("source"))
                 add_issue(item, {
                     "type": "LIFECYCLE_WARNING",
                     "severity": "HIGH" if lifecycle == "EOL" else "WARNING",
@@ -1616,7 +1662,7 @@ def compact_report(report):
                 component_has_problem = True
 
             if deprecation.get("status") not in {None, "NOT_VERIFIED"}:
-                item = item or new_item(module_path, coordinate, "dependency", current, component.get("source"))
+                item = item or new_item(module_path, coordinate, component_category, current, component.get("source"))
                 add_issue(item, {
                     "type": deprecation.get("status"),
                     "severity": "WARNING",
