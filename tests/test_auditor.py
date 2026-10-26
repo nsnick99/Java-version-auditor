@@ -190,10 +190,16 @@ class VersionAuditorTests(unittest.TestCase):
             },
         }
         result = auditor.compact_report(raw)
-        self.assertEqual(result["summary"]["dependencies"], 1)
         self.assertEqual(result["summary"]["updates_available"], 1)
         self.assertEqual(result["summary"]["lifecycle_warnings"], 1)
-        self.assertEqual(result["dependencies"][0]["status"], "UPDATE_AVAILABLE")
+        self.assertEqual(result["summary"]["components_needing_review"], 2)
+        self.assertEqual(result["summary"]["status"], "REVIEW_REQUIRED")
+        self.assertTrue(any(
+            item["component"] == "org.example:sample-lib"
+            and any(issue["type"] == "UPDATE_AVAILABLE" for issue in item["issues"])
+            for item in result["review_items"]
+        ))
+        self.assertNotIn("dependencies", result)
         self.assertNotIn("project_path", result)
         self.assertNotIn("version_intelligence", result)
 
@@ -231,9 +237,14 @@ class VersionAuditorTests(unittest.TestCase):
             },
         }
         result = auditor.compact_report(raw)
-        self.assertEqual(result["dependencies"][0]["status"], "VERSION_COMPARISON_UNCERTAIN")
-        self.assertEqual(result["checks"]["latest_versions"], "AVAILABLE_WITH_GAPS")
-        self.assertEqual(result["checks"]["vulnerabilities"], "AVAILABLE_WITH_GAPS")
+        self.assertEqual(result["summary"]["status"], "REVIEW_REQUIRED")
+        self.assertTrue(any(
+            item["component"] == "org.example:custom-lib"
+            and any(issue["type"] == "VERSION_COMPARISON_UNCERTAIN" for issue in item["issues"])
+            for item in result["review_items"]
+        ))
+        self.assertEqual(result["checks"]["latest_versions"], "PARTIAL")
+        self.assertEqual(result["checks"]["vulnerabilities"], "PARTIAL")
 
     def test_missing_build_files_are_reported_explicitly(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -267,9 +278,12 @@ class VersionAuditorTests(unittest.TestCase):
             self.assertEqual(java_tech["current_version"], "17")
             self.assertEqual(report["scan"]["mode"], "OFFLINE")
             self.assertEqual(report["checks"]["latest_versions"], "SKIPPED")
+            self.assertEqual(report["summary"]["status"], "CHECK_INCOMPLETE")
+            self.assertEqual(report["summary"]["components_ok"], 0)
+            self.assertEqual(report["review_items"], [])
             self.assertEqual(
                 set(report.keys()),
-                {"schema_version", "project", "scan", "summary", "technologies", "dependencies", "alerts", "version_conflicts", "checks"},
+                {"schema_version", "project", "scan", "summary", "review_items", "checks"},
             )
 
 
