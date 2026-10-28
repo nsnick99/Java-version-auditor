@@ -35,7 +35,7 @@ python main.py /path/to/java-project --offline --resolve --output audit-report.j
 Force the build tools to use only their local caches:
 
 ~~~bash
-python main.py /path/to/java-project --build-offline --resolve --output audit-report.json
+python main.py /path/to/java-project --offline --build-offline --resolve --output audit-report.json
 ~~~
 
 Use Python 3.8+. No third-party Python packages are required. Maven or Gradle is required only for --resolve.
