@@ -1,9 +1,14 @@
 from __future__ import annotations
 
 import argparse
+import ipaddress
 import json
 import re
+import shutil
+import subprocess
+import tempfile
 import urllib.error
+import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
@@ -109,45 +114,163 @@ def http_bytes(url: str, timeout: int = HTTP_TIMEOUT, accept: str = "*/*") -> by
         return response.read()
 
 
-def maven_metadata_url(group_id: str, artifact_id: str) -> str:
+def xml_child(parent: ET.Element | None, name: str) -> ET.Element | None:
+    if parent is None:
+        return None
+    return next((item for item in list(parent) if item.tag.split("}")[-1] == name), None)
+
+
+def xml_text(parent: ET.Element | None, name: str) -> str | None:
+    node = xml_child(parent, name)
+    return (node.text or "").strip() if node is not None and node.text else None
+
+
+def is_internal_repository_url(url: str, repository_id: str = "") -> bool:
+    """Accept private/local endpoints only in strict internal-only mode."""
+    try:
+        parsed = urllib.parse.urlparse(url)
+        host = (parsed.hostname or "").lower().rstrip(".")
+        if parsed.scheme.lower() not in {"http", "https"} or not host:
+            return False
+        if host in {"localhost", "127.0.0.1", "::1"} or host.endswith((".local", ".internal")):
+            return True
+        try:
+            ip = ipaddress.ip_address(host)
+            return ip.is_private or ip.is_loopback or ip.is_link_local
+        except ValueError:
+            repo_id = repository_id.lower()
+            return "." not in host and any(
+                token in repo_id for token in ("internal", "intranet", "nexus", "artifactory")
+            )
+    except ValueError:
+        return False
+
+
+def configured_maven_repositories(pom_path: Path, internal_only: bool = False) -> list[dict]:
+    """Read repository declarations from the project POM; edit.txt is not consulted."""
+    try:
+        root = ET.parse(pom_path).getroot()
+    except (ET.ParseError, OSError):
+        return []
+    repositories = []
+    for container_name, repository_name in (
+        ("repositories", "repository"),
+        ("pluginRepositories", "pluginRepository"),
+    ):
+        container = xml_child(root, container_name)
+        for repository in list(container or []):
+            if repository.tag.split("}")[-1] != repository_name:
+                continue
+            repository_id = xml_text(repository, "id") or ""
+            url = xml_text(repository, "url")
+            if not url:
+                continue
+            parsed = urllib.parse.urlparse(url)
+            if parsed.scheme.lower() not in {"http", "https"} or not parsed.netloc:
+                continue
+            if internal_only and not is_internal_repository_url(url, repository_id):
+                continue
+            normalized = url.rstrip("/")
+            if not any(item["url"] == normalized for item in repositories):
+                repositories.append({"id": repository_id or "repository", "url": normalized})
+    return repositories
+
+
+def maven_metadata_url(group_id: str, artifact_id: str, repository_url: str | None = None) -> str:
     group_path = "/".join(urllib.parse.quote(part, safe="") for part in str(group_id).split("."))
     artifact = urllib.parse.quote(str(artifact_id), safe="")
-    return f"https://repo.maven.apache.org/maven2/{group_path}/{artifact}/maven-metadata.xml"
+    base = repository_url.rstrip("/") if repository_url else "https://repo.maven.apache.org/maven2"
+    return f"{base}/{group_path}/{artifact}/maven-metadata.xml"
 
 
-def latest_maven_version(group_id: str, artifact_id: str) -> dict:
+def latest_maven_version(
+    group_id: str,
+    artifact_id: str,
+    repository_urls: list[dict] | None = None,
+    internal_only: bool = False,
+    offline: bool = False,
+) -> dict:
+    """Look up versions; internal-only never falls back to a public URL."""
     if not group_id or not artifact_id:
         return {"status": "NOT_APPLICABLE", "version": None}
-    url = maven_metadata_url(group_id, artifact_id)
-    try:
-        raw = http_bytes(url, accept="application/xml,text/xml,*/*")
-        root = ET.fromstring(raw)
-    except urllib.error.HTTPError as e:
-        return {"status": "NOT_FOUND" if e.code == 404 else "UNAVAILABLE", "version": None, "url": url}
-    except Exception as e:
-        return {"status": "UNAVAILABLE", "version": None, "url": url, "message": str(e)[:250]}
-
-    def xml_text(name: str) -> str | None:
-        node = next((item for item in list(root) if item.tag.split("}")[-1] == name), None)
-        return (node.text or "").strip() if node is not None and node.text else None
-
-    versioning = next((item for item in list(root) if item.tag.split("}")[-1] == "versioning"), None)
-    versions_node = next((item for item in list(versioning or []) if item.tag.split("}")[-1] == "versions"), None)
-    versions = [(item.text or "").strip() for item in list(versions_node or []) if item.text]
-    stable = [v for v in versions if not re.search(r"(?i)(?:^|[._-])(alpha|beta|rc|milestone|snapshot|preview|nightly|dev|ea|cr)", v)]
-    release = xml_text("release")
-    if release and not re.search(r"(?i)(?:^|[._-])(alpha|beta|rc|milestone|snapshot|preview|nightly|dev|ea|cr)", release):
-        chosen = release
-    elif stable:
-        chosen = stable[0]
-        for v in stable[1:]:
-            if compare_versions(v, chosen) > 0:
-                chosen = v
+    if offline:
+        return {"status": "SKIPPED_OFFLINE", "version": None}
+    if internal_only:
+        candidates = [
+            repo for repo in (repository_urls or [])
+            if is_internal_repository_url(repo.get("url", ""), repo.get("id", ""))
+        ]
+        if not candidates:
+            return {
+                "status": "SKIPPED_NO_INTERNAL_REPOSITORY",
+                "version": None,
+                "message": "No approved internal Maven repository URL was found in this POM.",
+            }
     else:
-        latest = xml_text("latest")
-        chosen = latest if latest and not re.search(r"(?i)(?:^|[._-])(alpha|beta|rc|milestone|snapshot|preview|nightly|dev|ea|cr)", latest) else None
+        candidates = [{"id": "maven-central", "url": "https://repo.maven.apache.org/maven2"}]
 
-    return {"status": "FOUND" if chosen else "NO_STABLE_RELEASE_FOUND", "version": chosen, "url": url}
+    last_failure = None
+    for repository in candidates:
+        url = maven_metadata_url(group_id, artifact_id, repository["url"])
+        try:
+            raw = http_bytes(url, accept="application/xml,text/xml,*/*")
+            root = ET.fromstring(raw)
+        except urllib.error.HTTPError as error:
+            if internal_only:
+                last_failure = {
+                    "status": "NOT_FOUND" if error.code == 404 else "UNAVAILABLE",
+                    "version": None,
+                    "message": "Internal repository returned HTTP " + str(error.code),
+                }
+            else:
+                last_failure = {
+                    "status": "NOT_FOUND" if error.code == 404 else "UNAVAILABLE",
+                    "version": None, "url": url, "message": "HTTP " + str(error.code),
+                }
+            continue
+        except (urllib.error.URLError, TimeoutError, OSError, ET.ParseError, ValueError):
+            last_failure = {
+                "status": "UNAVAILABLE", "version": None,
+                "url": None if internal_only else url,
+                "message": "Internal repository lookup failed." if internal_only else "Repository metadata could not be retrieved.",
+            }
+            continue
+
+        versioning = xml_child(root, "versioning")
+        versions_node = xml_child(versioning, "versions")
+        versions = [
+            (item.text or "").strip() for item in list(versions_node or [])
+            if item.tag.split("}")[-1] == "version" and item.text
+        ]
+        prerelease = re.compile(
+            r"(?i)(?:^|[._-])(alpha|beta|rc|milestone|snapshot|preview|nightly|dev|ea|cr)(?:[._-]?\d+)?(?:$|[._-])"
+        )
+        stable = [version for version in versions if not prerelease.search(version)]
+        release = xml_text(versioning, "release")
+        if release and not prerelease.search(release):
+            chosen = release
+        elif stable:
+            chosen = stable[0]
+            for version in stable[1:]:
+                if compare_versions(version, chosen) > 0:
+                    chosen = version
+        else:
+            latest = xml_text(versioning, "latest")
+            chosen = latest if latest and not prerelease.search(latest) else None
+        if not chosen:
+            last_failure = {
+                "status": "NO_STABLE_RELEASE_FOUND", "version": None,
+                "message": "No stable version was present in repository metadata.",
+            }
+            continue
+        return {
+            "status": "FOUND", "version": chosen,
+            "url": None if internal_only else url,
+            "source": "internal Maven repository" if internal_only else "Maven Central",
+        }
+    return last_failure or {"status": "NOT_FOUND", "version": None}
+
+
 
 
 def lifecycle_slug_for_component(group: str, artifact: str) -> str | None:
@@ -164,15 +287,16 @@ def lifecycle_slug_for_component(group: str, artifact: str) -> str | None:
     return None
 
 
-def lifecycle_status(product: str, version: str) -> dict:
-    slug = lifecycle_slug_for_component("", "")
-    if product == "java":
-        slug = "java"
-    elif product == "spring-boot":
-        slug = "spring-boot"
-    else:
+def lifecycle_status(product: str, version: str, allow_external: bool = True) -> dict:
+    """Query public lifecycle data only when external lookups are explicitly allowed."""
+    if not allow_external:
+        return {
+            "status": "SKIPPED", "product": product, "version": version,
+            "message": "Lifecycle data is not available from Maven repository metadata.",
+        }
+    slug = "java" if product == "java" else "spring-boot" if product == "spring-boot" else None
+    if slug is None:
         return {"status": "NOT_CATALOGUED", "product": product, "version": version}
-
     url = f"https://endoflife.date/api/v1/products/{slug}"
     try:
         data = http_json(url)
@@ -182,28 +306,19 @@ def lifecycle_status(product: str, version: str) -> dict:
         release = next((r for r in result.get("releases", []) if r.get("name") == cycle_str), None)
         if not release:
             return {"status": "CYCLE_NOT_FOUND", "product": product, "cycle": cycle_str, "version": version}
-        eol = release.get("isEol")
-        maintained = release.get("isMaintained")
-        if eol:
-            status = "EOL"
-        elif maintained:
-            status = "MAINTAINED"
-        else:
-            status = "NOT_MAINTAINED"
+        eol, maintained = release.get("isEol"), release.get("isMaintained")
+        status = "EOL" if eol else "MAINTAINED" if maintained else "NOT_MAINTAINED"
         return {
-            "status": status,
-            "product": product,
-            "cycle": cycle_str,
-            "version": version,
-            "eol_date": release.get("eolFrom"),
-            "is_eol": eol,
-            "is_maintained": maintained,
+            "status": status, "product": product, "cycle": cycle_str, "version": version,
+            "eol_date": release.get("eolFrom"), "is_eol": eol, "is_maintained": maintained,
             "source_url": result.get("links", {}).get("html", url),
         }
-    except urllib.error.HTTPError as e:
-        return {"status": "NOT_CATALOGUED" if e.code == 404 else "UNAVAILABLE", "product": product, "version": version}
-    except Exception as e:
-        return {"status": "UNAVAILABLE", "product": product, "version": version, "message": str(e)[:250]}
+    except urllib.error.HTTPError as error:
+        return {"status": "NOT_CATALOGUED" if error.code == 404 else "UNAVAILABLE", "product": product, "version": version}
+    except (urllib.error.URLError, TimeoutError, OSError, ValueError):
+        return {"status": "UNAVAILABLE", "product": product, "version": version, "message": "Lifecycle source could not be reached."}
+
+
 
 
 def known_deprecation(group: str, artifact: str) -> dict:
