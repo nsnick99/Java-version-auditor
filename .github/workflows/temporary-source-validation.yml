@@ -1,0 +1,82 @@
+name: Temporary source validation
+on:
+  push:
+    branches: [main]
+    paths:
+      - auditor.py
+      - main.py
+      - .github/workflows/temporary-source-validation.yml
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile Python files
+        run: python -m py_compile auditor.py main.py
+      - name: Offline smoke test for inherited Maven versions and counts
+        shell: bash
+        run: |
+          set -euo pipefail
+          project="$(mktemp -d)"
+          mkdir -p "$project/SmallestSpringApp"
+          cat > "$project/SmallestSpringApp/pom.xml" <<'POM'
+          <project xmlns="http://maven.apache.org/POM/4.0.0">
+            <modelVersion>4.0.0</modelVersion>
+            <groupId>example</groupId>
+            <artifactId>smallest-spring-sample</artifactId>
+            <version>1.0.0</version>
+            <parent>
+              <groupId>org.springframework.boot</groupId>
+              <artifactId>spring-boot-starter-parent</artifactId>
+              <version>1.2.0.RELEASE</version>
+            </parent>
+            <build>
+              <plugins>
+                <plugin>
+                  <groupId>org.springframework.boot</groupId>
+                  <artifactId>spring-boot-maven-plugin</artifactId>
+                </plugin>
+              </plugins>
+            </build>
+            <dependencies>
+              <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-web</artifactId>
+              </dependency>
+            </dependencies>
+          </project>
+          POM
+          python main.py "$project" --offline --output "$project/output.json"
+          python - "$project/output.json" <<'PY'
+          import json
+          import sys
+
+          with open(sys.argv[1], encoding="utf-8") as f:
+              report = json.load(f)
+
+          assert report["summary"]["components_scanned"] == 4, report["summary"]
+          assert report["summary"]["components_needing_review"] == 3, report["summary"]
+          assert report["summary"]["components_ok"] == 0, report["summary"]
+          assert report["summary"]["status"] == "CHECK_INCOMPLETE", report["summary"]
+          assert report["checks"] == {
+              "latest_versions": "SKIPPED",
+              "vulnerabilities": "SKIPPED",
+              "lifecycle": "SKIPPED",
+          }, report["checks"]
+
+          items = {(item["component"], item["category"]): item for item in report["review_items"]}
+          assert ("Java", "technology") in items, items.keys()
+          assert ("org.springframework.boot:spring-boot-starter-web", "dependency") in items, items.keys()
+          assert ("org.springframework.boot:spring-boot-maven-plugin", "build_plugin") in items, items.keys()
+          for component in (
+              "org.springframework.boot:spring-boot-starter-web",
+              "org.springframework.boot:spring-boot-maven-plugin",
+          ):
+              item = next(i for i in report["review_items"] if i["component"] == component)
+              assert any(issue["type"] == "VERSION_INHERITED_UNRESOLVED" for issue in item["issues"]), item
+
+          print("Offline smoke test passed")
+          PY
