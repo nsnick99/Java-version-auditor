@@ -56,6 +56,8 @@ python main.py /path/to/Java_Full_Stack_Project --output output.json
 - A newer release is not automatically compatible; review release notes and tests before updating.
 - Maven Central checks do not cover private repositories.
 - Without --resolve, some transitive dependencies and remotely managed versions may not be discovered.
+- With --resolve, Maven's effective POM is also inspected to identify parent/BOM-managed dependency and plugin versions and inherited Java compiler settings when the required Maven plugins and metadata are available locally.
+- Combine --offline and --resolve in air-gapped environments. The auditor passes Maven's offline flag or Gradle's --offline option to prevent the build tool from trying remote repositories. Effective-POM and dependency resolution can still fail when required plugins, parent POMs, or artifacts are not cached locally.
 - Gradle static parsing supports common dependency notations and version catalogs, not every custom convention.
 - No OSV match does not prove a dependency is vulnerability-free.
 - Lifecycle coverage depends on the available lifecycle dataset.
