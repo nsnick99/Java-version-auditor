@@ -13,7 +13,10 @@ def main():
     )
     parser.add_argument("project", help="Path to the Java project directory")
     parser.add_argument("-o", "--output", default="audit-report.json", help="JSON report path")
-    parser.add_argument("--offline", action="store_true", help="Skip online version/security/lifecycle checks")
+    parser.add_argument(
+        "--offline", action="store_true",
+        help="Skip online version/security/lifecycle checks; with --resolve, force Maven/Gradle into offline mode",
+    )
     parser.add_argument(
         "--resolve",
         action="store_true",
