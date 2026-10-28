@@ -13,7 +13,17 @@ def main():
     )
     parser.add_argument("project", help="Path to the Java project directory")
     parser.add_argument("-o", "--output", default="audit-report.json", help="JSON report path")
-    parser.add_argument("--offline", action="store_true", help="Skip online version/security/lifecycle checks")
+    mode_group = parser.add_mutually_exclusive_group()
+    mode_group.add_argument(
+        "--internal-only",
+        action="store_true",
+        help="Query only private/local Maven repositories declared in pom.xml; skip public lifecycle APIs",
+    )
+    mode_group.add_argument(
+        "--offline",
+        action="store_true",
+        help="Make no network requests; perform static checks only",
+    )
     parser.add_argument(
         "--resolve",
         action="store_true",
@@ -25,52 +35,59 @@ def main():
     if not project.exists() or not project.is_dir():
         parser.error("Project path must be an existing directory: " + str(project))
 
-    report = audit(project, online=not args.offline, resolve=args.resolve)
+    try:
+        report = audit(
+            project,
+            resolve=args.resolve,
+            internal_only=args.internal_only,
+            offline=args.offline,
+        )
+    except ValueError as error:
+        parser.error(str(error))
     output = Path(args.output).expanduser()
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
     summary = report["summary"]
-    print("Project: " + str(report["project"]))
-    print("Build system: " + str(report["scan"].get("build_system", "Unknown")))
-    print("Status: " + str(summary["status"]))
-    print(summary["message"])
-    print("Modules: " + str(summary["modules"]))
-    print("Components scanned: " + str(summary["components_scanned"]))
-    print("Components OK: " + str(summary["components_ok"]))
-    print("Components needing review: " + str(summary["components_needing_review"]))
-    print(
-        "Checks: versions=" + report["checks"]["latest_versions"]
-        + ", vulnerabilities=" + report["checks"]["vulnerabilities"]
-        + ", lifecycle=" + report["checks"]["lifecycle"]
-    )
+    checks = report.get("checks", {})
+    project_info = report.get("project", {})
+    project_name = project_info.get("name", "Unknown") if isinstance(project_info, dict) else project_info
+    print("Project: " + str(project_name))
+    print("Status: " + str(summary.get("status", "UNKNOWN")))
+    print(summary.get("message", ""))
+    print("Total dependencies: " + str(summary.get("total_dependencies", 0)))
+    print("Outdated components: " + str(summary.get("outdated_components", 0)))
+    print("Outdated technologies: " + str(summary.get("outdated_technologies", 0)))
+    print("Components needing review: " + str(summary.get("components_needing_review", 0)))
+    print("Checks: mode=" + str(checks.get("mode", "UNKNOWN"))
+          + ", latest_versions=" + str(checks.get("latest_versions", "UNKNOWN"))
+          + ", lifecycle=" + str(checks.get("lifecycle", "UNKNOWN")))
 
-    if report["review_items"]:
+    if report.get("outdated_components"):
         print("\nComponents needing attention:")
+        for item in report["outdated_components"]:
+            print("- " + str(item.get("component", item.get("name", "unknown"))))
+            print("  Current: " + str(item.get("current_version")))
+            print("  Latest / alternative: " + str(item.get("latest_version")))
+            print("  Status: " + str(item.get("status")))
+            print("  Reason: " + str(item.get("reason")))
+            print("  Action: " + str(item.get("action")))
+    if report.get("outdated_technologies"):
+        print("\nTechnologies needing attention:")
+        for item in report["outdated_technologies"]:
+            print("- " + str(item.get("component", item.get("name", "unknown"))))
+            print("  Current: " + str(item.get("current_version")))
+            print("  Latest: " + str(item.get("latest_version")))
+            print("  Status: " + str(item.get("status")))
+            print("  Reason: " + str(item.get("reason")))
+            print("  Action: " + str(item.get("action")))
+    if report.get("review_items"):
+        print("\nChecks needing review:")
         for item in report["review_items"]:
-            module = item.get("module", ".")
-            component = item.get("component", "unknown")
-            current = item.get("current_version")
-            line = "- " + str(component) + " [" + str(module) + "]"
-            if current:
-                line += " | current: " + str(current)
-            print(line)
-            for issue in item.get("issues", []):
-                issue_line = "    * " + str(issue.get("type", "REVIEW"))
-                if issue.get("recommended_version"):
-                    issue_line += " | recommended: " + str(issue["recommended_version"])
-                if issue.get("latest_version"):
-                    issue_line += " | latest: " + str(issue["latest_version"])
-                if issue.get("advisory"):
-                    issue_line += " | advisory: " + str(issue["advisory"])
-                if issue.get("message"):
-                    issue_line += " — " + str(issue["message"])
-                print(issue_line)
-    else:
-        print("\nNo components were flagged for review by the completed checks.")
-
-    print("\nReport: " + str(output))
-
+            print("- " + str(item.get("component", item.get("name", "unknown")))
+                  + " | " + str(item.get("status", "REVIEW"))
+                  + " | " + str(item.get("reason", "")))
+    print("\nReport saved to: " + str(output))
 
 if __name__ == "__main__":
     main()
