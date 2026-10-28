@@ -717,11 +717,14 @@ def finding(items):
     return {"status": "DETECTED", "version": versions[0], "evidence": evidence}
 
 
-def resolve_maven_tree(folder, timeout=120):
+def resolve_maven_tree(folder, timeout=120, offline=False):
     """Resolve Maven's dependency tree only when the user explicitly requests --resolve."""
     if not (folder / "pom.xml").is_file():
         return {"status": "NOT_APPLICABLE", "components": [], "message": "No pom.xml"}
-    command = ["mvn", "dependency:tree", "-DoutputType=text", "-Dstyle.color=never"]
+    command = ["mvn"]
+    if offline:
+        command.append("-o")
+    command.extend(["dependency:tree", "-DoutputType=text", "-Dstyle.color=never"])
     try:
         proc = subprocess.run(
             command, cwd=str(folder), capture_output=True, text=True,
@@ -764,7 +767,134 @@ def resolve_maven_tree(folder, timeout=120):
     return {"status": "RESOLVED", "components": resolved, "message": None}
 
 
-def resolve_gradle_tree(folder, timeout=120):
+
+def resolve_maven_effective_pom(folder, timeout=120, offline=False):
+    """Ask Maven for the effective POM so parent/BOM-managed versions can be identified."""
+    if not (folder / "pom.xml").is_file():
+        return {
+            "status": "NOT_APPLICABLE",
+            "java_versions": [],
+            "spring_boot_versions": [],
+            "components": [],
+            "message": "No pom.xml",
+        }
+
+    try:
+        with tempfile.TemporaryDirectory(prefix="java-version-auditor-") as temporary_directory:
+            effective_path = Path(temporary_directory) / "effective-pom.xml"
+            command = ["mvn"]
+            if offline:
+                command.append("-o")
+            command.extend([
+                "help:effective-pom",
+                "-Doutput=" + str(effective_path),
+                "-Dstyle.color=never",
+            ])
+            proc = subprocess.run(
+                command, cwd=str(folder), capture_output=True, text=True,
+                timeout=timeout, check=False,
+            )
+            if proc.returncode != 0:
+                message = (proc.stderr or proc.stdout or "Maven help:effective-pom failed").strip()
+                return {
+                    "status": "FAILED",
+                    "java_versions": [],
+                    "spring_boot_versions": [],
+                    "components": [],
+                    "message": message[-1200:],
+                }
+            if not effective_path.is_file():
+                return {
+                    "status": "FAILED",
+                    "java_versions": [],
+                    "spring_boot_versions": [],
+                    "components": [],
+                    "message": "Maven completed but did not create the effective POM output.",
+                }
+
+            java_versions, spring_boot_versions, components = maven(effective_path, effective_path.parent)
+            return {
+                "status": "RESOLVED",
+                "java_versions": java_versions,
+                "spring_boot_versions": spring_boot_versions,
+                "components": components,
+                "message": None,
+            }
+    except FileNotFoundError:
+        return {
+            "status": "TOOL_NOT_FOUND",
+            "java_versions": [],
+            "spring_boot_versions": [],
+            "components": [],
+            "message": "Maven executable was not found on PATH.",
+        }
+    except subprocess.TimeoutExpired:
+        return {
+            "status": "TIMEOUT",
+            "java_versions": [],
+            "spring_boot_versions": [],
+            "components": [],
+            "message": "Maven effective-POM generation timed out.",
+        }
+    except (OSError, ValueError, ET.ParseError) as error:
+        return {
+            "status": "FAILED",
+            "java_versions": [],
+            "spring_boot_versions": [],
+            "components": [],
+            "message": str(error)[:1200],
+        }
+
+
+def apply_effective_model(module, effective_result):
+    """Apply versions and technology settings resolved by Maven's effective POM."""
+    module["effective_pom_resolution"] = {
+        "status": effective_result.get("status", "FAILED"),
+        "message": effective_result.get("message"),
+        "resolved_component_count": len(effective_result.get("components", [])),
+    }
+    if effective_result.get("status") != "RESOLVED":
+        return
+
+    for key, field in (("java", "java_versions"), ("spring_boot", "spring_boot_versions")):
+        prior = module.get(key, {})
+        evidence = [
+            (entry.get("version"), entry.get("source", "build configuration"))
+            for entry in prior.get("evidence", [])
+            if entry.get("version")
+        ]
+        evidence.extend(effective_result.get(field, []))
+        module[key] = finding(evidence)
+
+    resolved_by_key = {}
+    for component in effective_result.get("components", []):
+        version = component.get("version")
+        if not version:
+            continue
+        key = (
+            component.get("group_id"),
+            component.get("artifact_id"),
+            component.get("component_type", "dependency"),
+        )
+        resolved_by_key.setdefault(key, component)
+
+    for component in module.get("dependencies", []):
+        key = (
+            component.get("group_id"),
+            component.get("artifact_id"),
+            component.get("component_type", "dependency"),
+        )
+        resolved = resolved_by_key.get(key)
+        if not resolved or not resolved.get("version"):
+            continue
+        component["version"] = resolved["version"]
+        component["version_source"] = "effective_pom"
+        component["version_resolution_status"] = "RESOLVED"
+        component["effective_version"] = resolved["version"]
+        component.pop("version_resolution_message", None)
+
+
+def resolve_gradle_tree(folder, timeout=120, offline=False):
     """Resolve Gradle runtime/test dependency graphs only when --resolve is supplied."""
     configurations = ["runtimeClasspath", "testRuntimeClasspath"]
     all_components = []
@@ -778,7 +908,7 @@ def resolve_gradle_tree(folder, timeout=120):
     else:
         base_command = ["gradle"]
     for configuration in configurations:
-        command = base_command + ["dependencies", "--configuration", configuration, "--console=plain"]
+        command = base_command + (["--offline"] if offline else []) + ["dependencies", "--configuration", configuration, "--console=plain"]
         try:
             proc = subprocess.run(
                 command, cwd=str(folder), capture_output=True, text=True,
@@ -1943,12 +2073,15 @@ def audit(project, online=True, resolve=False):
         }
         if resolve:
             if "Maven" in module["build_systems"]:
-                resolution = resolve_maven_tree(folder)
+                resolution = resolve_maven_tree(folder, offline=not online)
             elif "Gradle" in module["build_systems"]:
-                resolution = resolve_gradle_tree(folder)
+                resolution = resolve_gradle_tree(folder, offline=not online)
             else:
                 resolution = {"status": "NOT_APPLICABLE", "components": [], "message": "Ant resolution is not implemented."}
             apply_resolution(module, resolution)
+            if "Maven" in module["build_systems"]:
+                effective_result = resolve_maven_effective_pom(folder, offline=not online)
+                apply_effective_model(module, effective_result)
         else:
             module["dependency_resolution"] = {
                 "status": "NOT_REQUESTED",
