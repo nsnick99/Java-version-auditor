@@ -1635,8 +1635,9 @@ def compact_report(report):
             lifecycle_data = intelligence.get("lifecycle", {})
             lifecycle = lifecycle_data.get("status", "NOT_CHECKED")
             status = found.get("status", "NOT_DETECTED")
-            if current:
-                technology_count += 1
+            # Count each technology detection slot examined, even when its version
+            # could not be detected; missing configuration is still a scan result.
+            technology_count += 1
 
             item = None
             if status == "CONFLICT":
@@ -1771,7 +1772,15 @@ def compact_report(report):
                 component_has_problem = True
             elif not current:
                 item = new_item(module_path, coordinate, component_category, current, component.get("source"))
-                add_version_review(item, "VERSION_UNKNOWN", "The dependency version could not be resolved from the project configuration.")
+                if component.get("version_resolution_status") == "INHERITED_UNRESOLVED":
+                    add_version_review(
+                        item,
+                        "VERSION_INHERITED_UNRESOLVED",
+                        "The POM omits this version and a parent POM/BOM may manage it, but the effective Maven model was not available to confirm the version.",
+                        details=component.get("version_source"),
+                    )
+                else:
+                    add_version_review(item, "VERSION_UNKNOWN", "The dependency version could not be resolved from the project configuration.")
                 component_has_problem = True
             elif online and lookup_status in {"UNAVAILABLE", "NOT_FOUND", "NO_STABLE_RELEASE_FOUND"}:
                 item = new_item(module_path, coordinate, component_category, current, component.get("source"))
@@ -1817,12 +1826,17 @@ def compact_report(report):
                     details=intelligence.get("vulnerability_message") or ("Security check status: " + str(vuln_status)),
                 )
                 component_has_problem = True
-            elif online and current and vuln_status in {"NOT_CHECKED", "VERSION_NOT_RESOLVED", "SKIPPED"}:
+            elif online and vuln_status in {"NOT_CHECKED", "VERSION_NOT_RESOLVED", "SKIPPED"}:
                 item = item or new_item(module_path, coordinate, component_category, current, component.get("source"))
+                message = (
+                    "The security check could not run because the component version was unresolved."
+                    if not current
+                    else "This component was not covered by the vulnerability check."
+                )
                 add_version_review(
                     item,
                     "SECURITY_CHECK_INCOMPLETE",
-                    "This component was not covered by the vulnerability check.",
+                    message,
                     details=intelligence.get("vulnerability_message") or ("Security check status: " + str(vuln_status)),
                 )
                 component_has_problem = True
@@ -1845,6 +1859,14 @@ def compact_report(report):
                     "message": "The lifecycle/support status could not be verified.",
                     "details": lifecycle_data.get("message") or ("Lifecycle status: " + str(lifecycle)),
                     "source_url": lifecycle_data.get("source_url"),
+                })
+                component_has_problem = True
+            elif online and not current and lifecycle == "NOT_CHECKED":
+                item = item or new_item(module_path, coordinate, component_category, current, component.get("source"))
+                add_issue(item, {
+                    "type": "LIFECYCLE_CHECK_INCOMPLETE",
+                    "severity": "REVIEW",
+                    "message": "The lifecycle check could not run because the component version was unresolved.",
                 })
                 component_has_problem = True
 
@@ -1906,7 +1928,7 @@ def compact_report(report):
                 "Update and verify compatibility" if any(issue.get("type") == "UPDATE_AVAILABLE" for issue in item["issues"]) else None,
                 "Review the security advisory and upgrade to a fixed version" if any(issue.get("type") == "KNOWN_VULNERABILITY" for issue in item["issues"]) else None,
                 "Review support status and plan an upgrade" if any(issue.get("type") == "LIFECYCLE_WARNING" for issue in item["issues"]) else None,
-                "Manually verify the version or check coverage" if any(issue.get("type") in {"VERSION_UNKNOWN", "VERSION_NOT_VERIFIED", "VERSION_CHECK_INCOMPLETE", "VERSION_CHECK_NOT_SUPPORTED", "VERSION_COMPARISON_UNCERTAIN", "VERSION_NOT_DETECTED", "SECURITY_CHECK_INCOMPLETE", "LIFECYCLE_CHECK_INCOMPLETE"} for issue in item["issues"]) else None,
+                "Manually verify the version or check coverage" if any(issue.get("type") in {"VERSION_UNKNOWN", "VERSION_NOT_VERIFIED", "VERSION_CHECK_INCOMPLETE", "VERSION_CHECK_NOT_SUPPORTED", "VERSION_COMPARISON_UNCERTAIN", "VERSION_NOT_DETECTED", "SECURITY_CHECK_INCOMPLETE", "LIFECYCLE_CHECK_INCOMPLETE", "VERSION_INHERITED_UNRESOLVED"} for issue in item["issues"]) else None,
                 "Resolve the version conflict" if any(issue.get("type") == "VERSION_CONFLICT" for issue in item["issues"]) else None,
                 "Review the recommended alternative" if any(issue.get("recommended_alternative") for issue in item["issues"]) else None,
             ) if action
@@ -1977,6 +1999,18 @@ def compact_report(report):
     scanned_components = dependency_total + technology_count
 
     no_build_files = module_count == 0
+    maven_modules = [module for module in modules if "Maven" in module.get("build_systems", [])]
+    if not report.get("dependency_resolution_requested"):
+        effective_pom_status = "NOT_REQUESTED"
+    elif not maven_modules:
+        effective_pom_status = "NOT_APPLICABLE"
+    elif all(module.get("effective_pom_resolution", {}).get("status") == "RESOLVED" for module in maven_modules):
+        effective_pom_status = "RESOLVED"
+    elif any(module.get("effective_pom_resolution", {}).get("status") == "RESOLVED" for module in maven_modules):
+        effective_pom_status = "PARTIAL"
+    else:
+        effective_pom_status = "FAILED"
+
     scan = {
         "mode": "ONLINE" if online else "OFFLINE",
         "build_system": report.get("build_system", "Unknown"),
@@ -1986,6 +2020,15 @@ def compact_report(report):
             else "RESOLVED" if all(module.get("dependency_resolution", {}).get("status") in {"RESOLVED", "NOT_APPLICABLE"} for module in modules)
             else "REQUESTED_BUT_INCOMPLETE"
         ),
+        "effective_pom_resolution": effective_pom_status,
+        "effective_pom_details": [
+            {
+                "module": module.get("path", "."),
+                "status": module.get("effective_pom_resolution", {}).get("status", "NOT_REQUESTED"),
+                "message": module.get("effective_pom_resolution", {}).get("message"),
+            }
+            for module in maven_modules
+        ] if report.get("dependency_resolution_requested") else [],
         "project_detected": not no_build_files,
     }
     if no_build_files:
