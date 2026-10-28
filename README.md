@@ -58,18 +58,20 @@ python main.py /path/to/Java_Full_Stack_Project --output output.json
 
 ## Analysis sources
 
-- Maven Central metadata for current stable releases
-- OSV.dev for known vulnerability advisories
-- endoflife.date for lifecycle data where a product/release cycle is catalogued
-- Eclipse Adoptium for the latest LTS Java reference
+- Maven Central metadata for current stable releases in online mode
+- Project-configured Maven repository metadata for version comparisons in `--offline` mode, when HTTP(S) repository URLs are declared in a POM
+- OSV.dev for known vulnerability advisories (online mode only)
+- endoflife.date for lifecycle data where a product/release cycle is catalogued (online mode only)
+- Eclipse Adoptium for the latest LTS Java reference (online mode only)
 
 ## Limitations
 
 - A newer release is not automatically compatible; review release notes and tests before updating.
-- Maven Central checks do not cover private repositories.
+- Online latest-version checks use Maven Central. In `--offline` mode, latest-version metadata is queried only from HTTP(S) repositories declared in project POMs; repositories from `settings.xml` are not currently discovered by the auditor.
+- Offline mode can check dependency/Spring Boot versions against internal Maven metadata, but vulnerability and lifecycle checks remain SKIPPED unless separate internal advisory/lifecycle data sources are added.
 - Without --resolve, some transitive dependencies and remotely managed versions may not be discovered.
 - With --resolve, Maven's effective POM is also inspected to identify parent/BOM-managed dependency and plugin versions and inherited Java compiler settings when the required Maven plugins and metadata are available locally.
-- Use --offline --resolve when external advisory APIs are blocked but your configured internal Maven/Gradle repository is reachable. Here, --offline skips the auditor's external version/security/lifecycle lookups while the build tool can still use repositories configured in the project POM.
+- Use --offline --resolve when public advisory APIs are blocked but a Maven repository declared in the project POM is reachable. The auditor queries that repository's Maven metadata for latest versions and still skips public vulnerability/lifecycle APIs. Maven/Gradle can also use configured repositories to resolve dependencies. The internal repository URL is not included in the JSON report.
 - Use --build-offline --resolve only when no repository is reachable and all required dependencies, plugins, and parent POMs are already cached locally. This passes Maven's -o flag or Gradle's --offline option.
 - Effective-POM and dependency resolution can still fail when required plugins, parent POMs, or artifacts are unavailable from the reachable internal repository or local cache.
 - edit.txt is an XML fragment for adding repository/pluginRepository entries to a POM; the auditor does not parse edit.txt itself.
