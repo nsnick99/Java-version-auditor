@@ -26,6 +26,18 @@ Resolve Maven/Gradle transitive dependencies (optional):
 python main.py /path/to/java-project --resolve
 ~~~
 
+Skip external checks but allow a configured internal repository to supply Maven/Gradle dependencies:
+
+~~~bash
+python main.py /path/to/java-project --offline --resolve --output audit-report.json
+~~~
+
+Force the build tools to use only their local caches:
+
+~~~bash
+python main.py /path/to/java-project --build-offline --resolve --output audit-report.json
+~~~
+
 Use Python 3.8+. No third-party Python packages are required. Maven or Gradle is required only for --resolve.
 
 ## Report format
@@ -57,7 +69,10 @@ python main.py /path/to/Java_Full_Stack_Project --output output.json
 - Maven Central checks do not cover private repositories.
 - Without --resolve, some transitive dependencies and remotely managed versions may not be discovered.
 - With --resolve, Maven's effective POM is also inspected to identify parent/BOM-managed dependency and plugin versions and inherited Java compiler settings when the required Maven plugins and metadata are available locally.
-- Combine --offline and --resolve in air-gapped environments. The auditor passes Maven's offline flag or Gradle's --offline option to prevent the build tool from trying remote repositories. Effective-POM and dependency resolution can still fail when required plugins, parent POMs, or artifacts are not cached locally.
+- Use --offline --resolve when external advisory APIs are blocked but your configured internal Maven/Gradle repository is reachable. Here, --offline skips the auditor's external version/security/lifecycle lookups while the build tool can still use repositories configured in the project POM.
+- Use --build-offline --resolve only when no repository is reachable and all required dependencies, plugins, and parent POMs are already cached locally. This passes Maven's -o flag or Gradle's --offline option.
+- Effective-POM and dependency resolution can still fail when required plugins, parent POMs, or artifacts are unavailable from the reachable internal repository or local cache.
+- edit.txt is an XML fragment for adding repository/pluginRepository entries to a POM; the auditor does not parse edit.txt itself.
 - Gradle static parsing supports common dependency notations and version catalogs, not every custom convention.
 - No OSV match does not prove a dependency is vulnerability-free.
 - Lifecycle coverage depends on the available lifecycle dataset.
