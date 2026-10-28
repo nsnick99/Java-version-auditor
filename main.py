@@ -15,7 +15,11 @@ def main():
     parser.add_argument("-o", "--output", default="audit-report.json", help="JSON report path")
     parser.add_argument(
         "--offline", action="store_true",
-        help="Skip online version/security/lifecycle checks; with --resolve, force Maven/Gradle into offline mode",
+        help="Skip external version/security/lifecycle checks; Maven/Gradle may still use configured internal repositories with --resolve",
+    )
+    parser.add_argument(
+        "--build-offline", action="store_true",
+        help="Force Maven/Gradle to use local caches only; do not contact any repository",
     )
     parser.add_argument(
         "--resolve",
@@ -28,7 +32,7 @@ def main():
     if not project.exists() or not project.is_dir():
         parser.error("Project path must be an existing directory: " + str(project))
 
-    report = audit(project, online=not args.offline, resolve=args.resolve)
+    report = audit(project, online=not args.offline, resolve=args.resolve, build_offline=args.build_offline)
     output = Path(args.output).expanduser()
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
