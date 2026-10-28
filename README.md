@@ -4,29 +4,41 @@ A focused Java project auditor that lists **only components needing attention**.
 
 ## Run
 
-Online mode checks dependency versions against Maven Central and lifecycle data through the configured public lifecycle source:
+~~~bash
+python main.py /path/to/java-project
+~~~
+
+Save the report to a JSON file:
 
 ~~~bash
 python main.py /path/to/java-project --output audit-report.json
 ~~~
 
-**Internal-only mode** queries Maven metadata only from private/local Maven repositories declared in the project's actual pom.xml. It never falls back to Maven Central and skips public lifecycle APIs:
+Skip online checks:
 
 ~~~bash
-python main.py /path/to/java-project --internal-only --resolve --output audit-report.json
+python main.py /path/to/java-project --offline
 ~~~
 
-The resolve option asks Maven to generate the effective POM so parent/BOM-managed versions can be inspected. In internal-only mode, a temporary Maven settings file mirrors all Maven repositories to the approved internal endpoint. If resolution fails, check Maven installation, repository credentials, parent POMs, and whether the required Maven Help Plugin is available internally.
-
-**Strict zero-network mode** performs static inspection only:
+Resolve Maven/Gradle transitive dependencies (optional):
 
 ~~~bash
-python main.py /path/to/java-project --offline --output audit-report.json
+python main.py /path/to/java-project --resolve
 ~~~
 
-Do not combine internal-only and offline. Internal-only mode makes requests to approved private/local Maven endpoints; offline mode makes no HTTP requests.
+Skip external checks but allow a configured internal repository to supply Maven/Gradle dependencies:
 
-Only Maven projects are currently audited. Python 3.10+ is required. Maven is required only for resolve.
+~~~bash
+python main.py /path/to/java-project --offline --resolve --output audit-report.json
+~~~
+
+Force the build tools to use only their local caches:
+
+~~~bash
+python main.py /path/to/java-project --offline --build-offline --resolve --output audit-report.json
+~~~
+
+Use Python 3.8+. No third-party Python packages are required. Maven or Gradle is required only for --resolve.
 
 ## Report format
 
@@ -46,22 +58,28 @@ python main.py /path/to/Java_Full_Stack_Project --output output.json
 
 ## Analysis sources
 
-- Maven Central metadata for online latest-version checks
-- Private/local Maven repository metadata for internal-only version checks
-- endoflife.date for Java and Spring Boot lifecycle checks in online mode
-- Locally encoded maintenance-mode advisories (a small rule list, not a complete advisory database)
+- Maven Central metadata for current stable releases in online mode
+- Project-configured Maven repository metadata for version comparisons in `--offline` mode, when HTTP(S) repository URLs are declared in a POM
+- OSV.dev for known vulnerability advisories (online mode only)
+- endoflife.date for lifecycle data where a product/release cycle is catalogued (online mode only)
+- Eclipse Adoptium for the latest LTS Java reference (online mode only)
 
 ## Limitations
 
-- Internal-only mode accepts private IPs, loopback addresses, and hostnames ending in .local or .internal. It also permits unqualified intranet hostnames when the repository ID clearly indicates an internal repository.
-- Repository URLs are read from the scanned project's pom.xml. The auditor does not parse edit.txt.
-- Internal Maven metadata can compare versions only for artifacts published or proxied by that repository. A missing metadata file may mean the repository does not host or proxy that artifact.
-- Vulnerability checks are not currently implemented. Lifecycle checks are skipped in internal-only and offline modes because Maven metadata alone cannot establish support status.
-- Without resolve, versions inherited from parent POMs or imported BOMs may remain unresolved. The report includes VERSION_UNRESOLVED instead of treating them as current.
-- In internal-only mode, resolve mirrors Maven repositories to the internal endpoint using temporary settings. If required artifacts or plugins are unavailable internally, resolution fails rather than falling back to public Maven Central.
-- A newer version is not necessarily compatible; check release notes and tests before upgrading.
-- Offline skips all network-based version and lifecycle checks. When resolve is also used, Maven is told to use its local cache only.
-- output.json is a generated snapshot and needs to be regenerated after code changes.
+- A newer release is not automatically compatible; review release notes and tests before updating.
+- Online latest-version checks use Maven Central. In `--offline` mode, latest-version metadata is queried only from HTTP(S) repositories declared in project POMs; repositories from `settings.xml` are not currently discovered by the auditor.
+- Offline mode can check dependency/Spring Boot versions against internal Maven metadata, but vulnerability and lifecycle checks remain SKIPPED unless separate internal advisory/lifecycle data sources are added.
+- Without --resolve, some transitive dependencies and remotely managed versions may not be discovered.
+- With --resolve, Maven's effective POM is also inspected to identify parent/BOM-managed dependency and plugin versions and inherited Java compiler settings when the required Maven plugins and metadata are available locally.
+- Use --offline --resolve when public advisory APIs are blocked but a Maven repository declared in the project POM is reachable. The auditor queries that repository's Maven metadata for latest versions and still skips public vulnerability/lifecycle APIs. Maven/Gradle can also use configured repositories to resolve dependencies. The internal repository URL is not included in the JSON report.
+- Use --build-offline --resolve only when no repository is reachable and all required dependencies, plugins, and parent POMs are already cached locally. This passes Maven's -o flag or Gradle's --offline option.
+- Effective-POM and dependency resolution can still fail when required plugins, parent POMs, or artifacts are unavailable from the reachable internal repository or local cache.
+- edit.txt is an XML fragment for adding repository/pluginRepository entries to a POM; the auditor does not parse edit.txt itself.
+- Gradle static parsing supports common dependency notations and version catalogs, not every custom convention.
+- No OSV match does not prove a dependency is vulnerability-free.
+- Lifecycle coverage depends on the available lifecycle dataset.
+- Maintenance/deprecation advisories are source-backed rules for known components, not a universal deprecation database.
+- --resolve executes Maven/Gradle project build configuration; use it only on trusted projects.
 
 ## Out of scope
 
