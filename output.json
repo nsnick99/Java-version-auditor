@@ -1,6 +1,6 @@
 {
   "schema_version": "1.1",
-  "project": "Java_Full_Stack_Project",
+  "project": "Smallest-spring-boot-sample",
   "scan": {
     "mode": "ONLINE",
     "build_system": "Maven",
@@ -9,11 +9,11 @@
   },
   "summary": {
     "status": "REVIEW_REQUIRED",
-    "message": "17 component(s) need review; some checks are incomplete. Components without detected issues are summarized as OK.",
+    "message": "4 component(s) need review; some checks are incomplete. Components without detected issues are summarized as OK.",
     "modules": 1,
-    "components_scanned": 17,
+    "components_scanned": 3,
     "components_ok": 0,
-    "components_needing_review": 17,
+    "components_needing_review": 4,
     "updates_available": 0,
     "known_vulnerabilities": 0,
     "lifecycle_warnings": 0,
@@ -21,34 +21,25 @@
   },
   "review_items": [
     {
-      "module": "backend",
+      "module": "SmallestSpringApp",
       "component": "Java",
       "category": "technology",
-      "current_version": "11",
+      "current_version": null,
       "source_file": null,
       "issues": [
         {
-          "type": "LIFECYCLE_CHECK_INCOMPLETE",
+          "type": "VERSION_NOT_DETECTED",
           "severity": "REVIEW",
-          "message": "The lifecycle/support status could not be verified.",
-          "details": "HTTP 403",
-          "source_url": "https://endoflife.date/api/v1/products/java"
-        },
-        {
-          "type": "VERSION_CHECK_INCOMPLETE",
-          "severity": "REVIEW",
-          "message": "The recommended version could not be verified; this technology cannot be marked OK.",
-          "source_url": "https://api.adoptium.net/v3/info/available_releases",
-          "details": "HTTP Error 403: Forbidden"
+          "message": "No Java version was detected in this module's build configuration."
         }
       ],
       "recommended_action": "Manually verify the version or check coverage"
     },
     {
-      "module": "backend",
+      "module": "SmallestSpringApp",
       "component": "Spring Boot",
       "category": "technology",
-      "current_version": "2.7.5",
+      "current_version": "1.2.0.RELEASE",
       "source_file": null,
       "issues": [
         {
@@ -69,409 +60,31 @@
       "recommended_action": "Manually verify the version or check coverage"
     },
     {
-      "module": "backend",
-      "component": "com.github.javafaker:javafaker",
-      "category": "dependency",
-      "current_version": "1.0.2",
-      "source_file": "backend/pom.xml",
-      "issues": [
-        {
-          "type": "SECURITY_CHECK_INCOMPLETE",
-          "severity": "REVIEW",
-          "message": "The vulnerability check did not complete; security status is unknown.",
-          "details": "HTTP Error 403: Forbidden"
-        },
-        {
-          "type": "VERSION_CHECK_INCOMPLETE",
-          "severity": "REVIEW",
-          "message": "The latest release could not be verified from the configured version source.",
-          "source_url": "https://repo.maven.apache.org/maven2/com/github/javafaker/javafaker/maven-metadata.xml",
-          "details": "HTTP 403"
-        }
-      ],
-      "recommended_action": "Manually verify the version or check coverage"
-    },
-    {
-      "module": "backend",
-      "component": "com.mysql:mysql-connector-j",
-      "category": "dependency",
-      "current_version": "8.0.33",
-      "source_file": "backend/pom.xml",
-      "issues": [
-        {
-          "type": "SECURITY_CHECK_INCOMPLETE",
-          "severity": "REVIEW",
-          "message": "The vulnerability check did not complete; security status is unknown.",
-          "details": "HTTP Error 403: Forbidden"
-        },
-        {
-          "type": "VERSION_CHECK_INCOMPLETE",
-          "severity": "REVIEW",
-          "message": "The latest release could not be verified from the configured version source.",
-          "source_url": "https://repo.maven.apache.org/maven2/com/mysql/mysql-connector-j/maven-metadata.xml",
-          "details": "HTTP 403"
-        }
-      ],
-      "recommended_action": "Manually verify the version or check coverage"
-    },
-    {
-      "module": "backend",
-      "component": "io.jsonwebtoken:jjwt",
-      "category": "dependency",
-      "current_version": "0.9.1",
-      "source_file": "backend/pom.xml",
-      "issues": [
-        {
-          "type": "SECURITY_CHECK_INCOMPLETE",
-          "severity": "REVIEW",
-          "message": "The vulnerability check did not complete; security status is unknown.",
-          "details": "HTTP Error 403: Forbidden"
-        },
-        {
-          "type": "VERSION_CHECK_INCOMPLETE",
-          "severity": "REVIEW",
-          "message": "The latest release could not be verified from the configured version source.",
-          "source_url": "https://repo.maven.apache.org/maven2/io/jsonwebtoken/jjwt/maven-metadata.xml",
-          "details": "HTTP 403"
-        }
-      ],
-      "recommended_action": "Manually verify the version or check coverage"
-    },
-    {
-      "module": "backend",
-      "component": "org.apache.maven.plugins:maven-compiler-plugin",
-      "category": "build_plugin",
-      "current_version": "3.10.1",
-      "source_file": "backend/pom.xml",
-      "issues": [
-        {
-          "type": "LIFECYCLE_CHECK_INCOMPLETE",
-          "severity": "REVIEW",
-          "message": "The lifecycle/support status could not be verified.",
-          "details": "HTTP 403",
-          "source_url": "https://endoflife.date/api/v1/products/maven"
-        },
-        {
-          "type": "SECURITY_CHECK_INCOMPLETE",
-          "severity": "REVIEW",
-          "message": "The vulnerability check did not complete; security status is unknown.",
-          "details": "HTTP Error 403: Forbidden"
-        },
-        {
-          "type": "VERSION_CHECK_INCOMPLETE",
-          "severity": "REVIEW",
-          "message": "The latest release could not be verified from the configured version source.",
-          "source_url": "https://repo.maven.apache.org/maven2/org/apache/maven/plugins/maven-compiler-plugin/maven-metadata.xml",
-          "details": "HTTP 403"
-        }
-      ],
-      "recommended_action": "Manually verify the version or check coverage"
-    },
-    {
-      "module": "backend",
-      "component": "org.mongodb:mongodb-driver-sync",
-      "category": "dependency",
-      "current_version": "4.6.1",
-      "source_file": "backend/pom.xml",
-      "issues": [
-        {
-          "type": "SECURITY_CHECK_INCOMPLETE",
-          "severity": "REVIEW",
-          "message": "The vulnerability check did not complete; security status is unknown.",
-          "details": "HTTP Error 403: Forbidden"
-        },
-        {
-          "type": "VERSION_CHECK_INCOMPLETE",
-          "severity": "REVIEW",
-          "message": "The latest release could not be verified from the configured version source.",
-          "source_url": "https://repo.maven.apache.org/maven2/org/mongodb/mongodb-driver-sync/maven-metadata.xml",
-          "details": "HTTP 403"
-        }
-      ],
-      "recommended_action": "Manually verify the version or check coverage"
-    },
-    {
-      "module": "backend",
-      "component": "org.projectlombok:lombok",
-      "category": "dependency",
-      "current_version": "1.18.30",
-      "source_file": "backend/pom.xml",
-      "issues": [
-        {
-          "type": "SECURITY_CHECK_INCOMPLETE",
-          "severity": "REVIEW",
-          "message": "The vulnerability check did not complete; security status is unknown.",
-          "details": "HTTP Error 403: Forbidden"
-        },
-        {
-          "type": "VERSION_CHECK_INCOMPLETE",
-          "severity": "REVIEW",
-          "message": "The latest release could not be verified from the configured version source.",
-          "source_url": "https://repo.maven.apache.org/maven2/org/projectlombok/lombok/maven-metadata.xml",
-          "details": "HTTP 403"
-        }
-      ],
-      "recommended_action": "Manually verify the version or check coverage"
-    },
-    {
-      "module": "backend",
-      "component": "org.springdoc:springdoc-openapi-ui",
-      "category": "dependency",
-      "current_version": "1.7.0",
-      "source_file": "backend/pom.xml",
-      "issues": [
-        {
-          "type": "SECURITY_CHECK_INCOMPLETE",
-          "severity": "REVIEW",
-          "message": "The vulnerability check did not complete; security status is unknown.",
-          "details": "HTTP Error 403: Forbidden"
-        },
-        {
-          "type": "VERSION_CHECK_INCOMPLETE",
-          "severity": "REVIEW",
-          "message": "The latest release could not be verified from the configured version source.",
-          "source_url": "https://repo.maven.apache.org/maven2/org/springdoc/springdoc-openapi-ui/maven-metadata.xml",
-          "details": "HTTP 403"
-        }
-      ],
-      "recommended_action": "Manually verify the version or check coverage"
-    },
-    {
-      "module": "backend",
-      "component": "org.springframework.boot:spring-boot-devtools",
-      "category": "dependency",
-      "current_version": "2.7.5",
-      "source_file": "backend/pom.xml",
-      "issues": [
-        {
-          "type": "LIFECYCLE_CHECK_INCOMPLETE",
-          "severity": "REVIEW",
-          "message": "The lifecycle/support status could not be verified.",
-          "details": "HTTP 403",
-          "source_url": "https://endoflife.date/api/v1/products/spring-boot"
-        },
-        {
-          "type": "SECURITY_CHECK_INCOMPLETE",
-          "severity": "REVIEW",
-          "message": "The vulnerability check did not complete; security status is unknown.",
-          "details": "HTTP Error 403: Forbidden"
-        },
-        {
-          "type": "VERSION_CHECK_INCOMPLETE",
-          "severity": "REVIEW",
-          "message": "The latest release could not be verified from the configured version source.",
-          "source_url": "https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-devtools/maven-metadata.xml",
-          "details": "HTTP 403"
-        }
-      ],
-      "recommended_action": "Manually verify the version or check coverage"
-    },
-    {
-      "module": "backend",
+      "module": "SmallestSpringApp",
       "component": "org.springframework.boot:spring-boot-maven-plugin",
       "category": "build_plugin",
-      "current_version": "2.7.5",
-      "source_file": "backend/pom.xml",
+      "current_version": null,
+      "source_file": "SmallestSpringApp/pom.xml",
       "issues": [
         {
-          "type": "LIFECYCLE_CHECK_INCOMPLETE",
+          "type": "VERSION_UNKNOWN",
           "severity": "REVIEW",
-          "message": "The lifecycle/support status could not be verified.",
-          "details": "HTTP 403",
-          "source_url": "https://endoflife.date/api/v1/products/spring-boot"
-        },
-        {
-          "type": "SECURITY_CHECK_INCOMPLETE",
-          "severity": "REVIEW",
-          "message": "The vulnerability check did not complete; security status is unknown.",
-          "details": "HTTP Error 403: Forbidden"
-        },
-        {
-          "type": "VERSION_CHECK_INCOMPLETE",
-          "severity": "REVIEW",
-          "message": "The latest release could not be verified from the configured version source.",
-          "source_url": "https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-maven-plugin/maven-metadata.xml",
-          "details": "HTTP 403"
+          "message": "The dependency version could not be resolved from the project configuration."
         }
       ],
       "recommended_action": "Manually verify the version or check coverage"
     },
     {
-      "module": "backend",
-      "component": "org.springframework.boot:spring-boot-starter-data-jpa",
-      "category": "dependency",
-      "current_version": "2.7.5",
-      "source_file": "backend/pom.xml",
-      "issues": [
-        {
-          "type": "LIFECYCLE_CHECK_INCOMPLETE",
-          "severity": "REVIEW",
-          "message": "The lifecycle/support status could not be verified.",
-          "details": "HTTP 403",
-          "source_url": "https://endoflife.date/api/v1/products/spring-boot"
-        },
-        {
-          "type": "SECURITY_CHECK_INCOMPLETE",
-          "severity": "REVIEW",
-          "message": "The vulnerability check did not complete; security status is unknown.",
-          "details": "HTTP Error 403: Forbidden"
-        },
-        {
-          "type": "VERSION_CHECK_INCOMPLETE",
-          "severity": "REVIEW",
-          "message": "The latest release could not be verified from the configured version source.",
-          "source_url": "https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-starter-data-jpa/maven-metadata.xml",
-          "details": "HTTP 403"
-        }
-      ],
-      "recommended_action": "Manually verify the version or check coverage"
-    },
-    {
-      "module": "backend",
-      "component": "org.springframework.boot:spring-boot-starter-data-mongodb",
-      "category": "dependency",
-      "current_version": "2.7.5",
-      "source_file": "backend/pom.xml",
-      "issues": [
-        {
-          "type": "LIFECYCLE_CHECK_INCOMPLETE",
-          "severity": "REVIEW",
-          "message": "The lifecycle/support status could not be verified.",
-          "details": "HTTP 403",
-          "source_url": "https://endoflife.date/api/v1/products/spring-boot"
-        },
-        {
-          "type": "SECURITY_CHECK_INCOMPLETE",
-          "severity": "REVIEW",
-          "message": "The vulnerability check did not complete; security status is unknown.",
-          "details": "HTTP Error 403: Forbidden"
-        },
-        {
-          "type": "VERSION_CHECK_INCOMPLETE",
-          "severity": "REVIEW",
-          "message": "The latest release could not be verified from the configured version source.",
-          "source_url": "https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-starter-data-mongodb/maven-metadata.xml",
-          "details": "HTTP 403"
-        }
-      ],
-      "recommended_action": "Manually verify the version or check coverage"
-    },
-    {
-      "module": "backend",
-      "component": "org.springframework.boot:spring-boot-starter-security",
-      "category": "dependency",
-      "current_version": "2.7.5",
-      "source_file": "backend/pom.xml",
-      "issues": [
-        {
-          "type": "LIFECYCLE_CHECK_INCOMPLETE",
-          "severity": "REVIEW",
-          "message": "The lifecycle/support status could not be verified.",
-          "details": "HTTP 403",
-          "source_url": "https://endoflife.date/api/v1/products/spring-boot"
-        },
-        {
-          "type": "SECURITY_CHECK_INCOMPLETE",
-          "severity": "REVIEW",
-          "message": "The vulnerability check did not complete; security status is unknown.",
-          "details": "HTTP Error 403: Forbidden"
-        },
-        {
-          "type": "VERSION_CHECK_INCOMPLETE",
-          "severity": "REVIEW",
-          "message": "The latest release could not be verified from the configured version source.",
-          "source_url": "https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-starter-security/maven-metadata.xml",
-          "details": "HTTP 403"
-        }
-      ],
-      "recommended_action": "Manually verify the version or check coverage"
-    },
-    {
-      "module": "backend",
-      "component": "org.springframework.boot:spring-boot-starter-test",
-      "category": "dependency",
-      "current_version": "2.7.5",
-      "source_file": "backend/pom.xml",
-      "issues": [
-        {
-          "type": "LIFECYCLE_CHECK_INCOMPLETE",
-          "severity": "REVIEW",
-          "message": "The lifecycle/support status could not be verified.",
-          "details": "HTTP 403",
-          "source_url": "https://endoflife.date/api/v1/products/spring-boot"
-        },
-        {
-          "type": "SECURITY_CHECK_INCOMPLETE",
-          "severity": "REVIEW",
-          "message": "The vulnerability check did not complete; security status is unknown.",
-          "details": "HTTP Error 403: Forbidden"
-        },
-        {
-          "type": "VERSION_CHECK_INCOMPLETE",
-          "severity": "REVIEW",
-          "message": "The latest release could not be verified from the configured version source.",
-          "source_url": "https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-starter-test/maven-metadata.xml",
-          "details": "HTTP 403"
-        }
-      ],
-      "recommended_action": "Manually verify the version or check coverage"
-    },
-    {
-      "module": "backend",
+      "module": "SmallestSpringApp",
       "component": "org.springframework.boot:spring-boot-starter-web",
       "category": "dependency",
-      "current_version": "2.7.5",
-      "source_file": "backend/pom.xml",
+      "current_version": null,
+      "source_file": "SmallestSpringApp/pom.xml",
       "issues": [
         {
-          "type": "LIFECYCLE_CHECK_INCOMPLETE",
+          "type": "VERSION_UNKNOWN",
           "severity": "REVIEW",
-          "message": "The lifecycle/support status could not be verified.",
-          "details": "HTTP 403",
-          "source_url": "https://endoflife.date/api/v1/products/spring-boot"
-        },
-        {
-          "type": "SECURITY_CHECK_INCOMPLETE",
-          "severity": "REVIEW",
-          "message": "The vulnerability check did not complete; security status is unknown.",
-          "details": "HTTP Error 403: Forbidden"
-        },
-        {
-          "type": "VERSION_CHECK_INCOMPLETE",
-          "severity": "REVIEW",
-          "message": "The latest release could not be verified from the configured version source.",
-          "source_url": "https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-starter-web/maven-metadata.xml",
-          "details": "HTTP 403"
-        }
-      ],
-      "recommended_action": "Manually verify the version or check coverage"
-    },
-    {
-      "module": "backend",
-      "component": "org.springframework.security:spring-security-crypto",
-      "category": "dependency",
-      "current_version": "5.7.4",
-      "source_file": "backend/pom.xml",
-      "issues": [
-        {
-          "type": "LIFECYCLE_CHECK_INCOMPLETE",
-          "severity": "REVIEW",
-          "message": "The lifecycle/support status could not be verified.",
-          "details": "HTTP 403",
-          "source_url": "https://endoflife.date/api/v1/products/spring-security"
-        },
-        {
-          "type": "SECURITY_CHECK_INCOMPLETE",
-          "severity": "REVIEW",
-          "message": "The vulnerability check did not complete; security status is unknown.",
-          "details": "HTTP Error 403: Forbidden"
-        },
-        {
-          "type": "VERSION_CHECK_INCOMPLETE",
-          "severity": "REVIEW",
-          "message": "The latest release could not be verified from the configured version source.",
-          "source_url": "https://repo.maven.apache.org/maven2/org/springframework/security/spring-security-crypto/maven-metadata.xml",
-          "details": "HTTP 403"
+          "message": "The dependency version could not be resolved from the project configuration."
         }
       ],
       "recommended_action": "Manually verify the version or check coverage"
