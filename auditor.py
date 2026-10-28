@@ -854,6 +854,12 @@ def apply_effective_model(module, effective_result):
         "resolved_component_count": len(effective_result.get("components", [])),
     }
     if effective_result.get("status") != "RESOLVED":
+        diagnostic = effective_result.get("message") or (
+            "Maven effective POM was not resolved: " + str(effective_result.get("status", "UNKNOWN"))
+        )
+        for component in module.get("dependencies", []):
+            if component.get("version_resolution_status") == "INHERITED_UNRESOLVED":
+                component["version_resolution_message"] = diagnostic
         return
 
     for key, field in (("java", "java_versions"), ("spring_boot", "spring_boot_versions")):
@@ -1705,6 +1711,10 @@ def compact_report(report):
                 else:
                     version_check_values.append("SKIPPED")
                     lifecycle_check_values.append("SKIPPED")
+            elif online and module_component_count:
+                # An undetected Java version cannot be validated against the LTS or lifecycle sources.
+                version_check_values.append("INCOMPLETE")
+                lifecycle_check_values.append("INCOMPLETE")
 
     dependency_total = 0
     dependency_ok = 0
@@ -1777,7 +1787,7 @@ def compact_report(report):
                         item,
                         "VERSION_INHERITED_UNRESOLVED",
                         "The POM omits this version and a parent POM/BOM may manage it, but the effective Maven model was not available to confirm the version.",
-                        details=component.get("version_source"),
+                        details=component.get("version_resolution_message") or component.get("version_source"),
                     )
                 else:
                     add_version_review(item, "VERSION_UNKNOWN", "The dependency version could not be resolved from the project configuration.")
@@ -1896,7 +1906,7 @@ def compact_report(report):
 
                 if lifecycle not in {"NOT_CHECKED", "UNAVAILABLE", "NOT_CATALOGUED", "CYCLE_NOT_FOUND", "UNKNOWN"}:
                     lifecycle_check_values.append("CHECKED")
-                elif lifecycle in {"UNAVAILABLE", "NOT_CATALOGUED", "CYCLE_NOT_FOUND", "UNKNOWN"}:
+                elif lifecycle in {"UNAVAILABLE", "NOT_CATALOGUED", "CYCLE_NOT_FOUND", "UNKNOWN"} or (not current and lifecycle == "NOT_CHECKED"):
                     lifecycle_check_values.append("INCOMPLETE")
 
             # A component is OK only when its version and security checks ran,
