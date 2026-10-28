@@ -7,6 +7,7 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -327,16 +328,25 @@ def maven(pom_path, project_root):
     props = model["properties"]
     relative_source = str(Path(pom_path).resolve().relative_to(Path(project_root).resolve()))
     properties_node = child(root, "properties")
+    java_property_names = {"java.version", "maven.compiler.release", "maven.compiler.source", "maven.compiler.target", "jdk.version"}
+    local_property_names = set()
     if properties_node is not None:
         for item in list(properties_node):
             name = local_name(item)
+            local_property_names.add(name)
             if not item.text:
                 continue
             val = resolve_value(item.text.strip(), props) or item.text.strip()
-            if name in {"java.version", "maven.compiler.release", "maven.compiler.source", "maven.compiler.target", "jdk.version"}:
+            if name in java_property_names:
                 java_versions.append((java_major(val), relative_source + " > properties." + name))
             if "spring" in name.lower() and "boot" in name.lower() and "version" in name.lower():
                 boot_versions.append((clean(val), relative_source + " > properties." + name))
+
+    # Include inherited compiler/version properties when a parent POM is available locally.
+    for name in sorted(java_property_names.intersection(props) - local_property_names):
+        val = resolve_value(props.get(name), props)
+        if val:
+            java_versions.append((java_major(val), relative_source + " > inherited Maven property." + name))
 
     parent = child(root, "parent")
     parent_group = resolve_value(text_child(parent, "groupId"), props)
@@ -345,11 +355,31 @@ def maven(pom_path, project_root):
     if parent_group == "org.springframework.boot" and parent_artifact == "spring-boot-starter-parent":
         boot_versions.append((clean(parent_version), relative_source + " > parent.version"))
 
+    # Read Maven compiler plugin configuration too. Parent POMs frequently set Java
+    # source/target here instead of exposing a java.version property.
+    plugin_nodes = []
+    build_node = child(root, "build")
+    if build_node is not None:
+        plugin_nodes.extend(children(child(build_node, "plugins"), "plugin"))
+        plugin_management_node = child(build_node, "pluginManagement")
+        plugin_nodes.extend(children(child(plugin_management_node, "plugins"), "plugin"))
+    for plugin in plugin_nodes:
+        group = resolve_value(text_child(plugin, "groupId"), props) or "org.apache.maven.plugins"
+        artifact = resolve_value(text_child(plugin, "artifactId"), props)
+        if group != "org.apache.maven.plugins" or artifact != "maven-compiler-plugin":
+            continue
+        config = child(plugin, "configuration")
+        for setting in ("release", "source", "target"):
+            val = resolve_value(text_child(config, setting), props)
+            if val:
+                java_versions.append((java_major(val), relative_source + " > maven-compiler-plugin.configuration." + setting))
+
     # A project may import the Spring Boot BOM without inheriting its parent.
     for dep in children(child(child(root, "dependencyManagement"), "dependencies"), "dependency"):
         if resolve_value(text_child(dep, "groupId"), props) == "org.springframework.boot" and resolve_value(text_child(dep, "artifactId"), props) == "spring-boot-dependencies":
             boot_versions.append((clean(resolve_value(text_child(dep, "version"), props)), relative_source + " > dependencyManagement.spring-boot-dependencies"))
 
+    has_parent_pom = parent is not None
     def version_for(dep, group, artifact, dep_type="jar"):
         declared = resolve_value(text_child(dep, "version"), props)
         if declared:
@@ -357,7 +387,7 @@ def maven(pom_path, project_root):
         managed = model["dependency_management"].get(group + ":" + artifact + ":" + dep_type) or model["dependency_management"].get(group + ":" + artifact)
         if managed:
             return managed["version"], "dependency_management"
-        return None, "unresolved_or_remote_managed"
+        return None, "unresolved_or_parent_managed" if has_parent_pom else "unresolved"
 
     # Only direct top-level dependencies are inventory items; dependencyManagement
     # definitions are version rules, not actual dependencies.
@@ -375,6 +405,9 @@ def maven(pom_path, project_root):
             "version": clean(version),
             "declared_version": clean(resolve_value(text_child(dep, "version"), props)),
             "version_source": source_kind,
+            "version_resolution_status": (
+                "RESOLVED" if version else "INHERITED_UNRESOLVED" if source_kind == "unresolved_or_parent_managed" else "UNRESOLVED"
+            ),
             "scope": scope,
             "optional": (text_child(dep, "optional") or "").lower() == "true",
             "direct": True,
@@ -397,7 +430,10 @@ def maven(pom_path, project_root):
             "artifact_id": artifact,
             "version": clean(version),
             "declared_version": clean(declared),
-            "version_source": "declared" if declared else ("plugin_management" if managed else "unresolved_or_parent_managed"),
+            "version_source": "declared" if declared else ("plugin_management" if managed else ("unresolved_or_parent_managed" if has_parent_pom else "unresolved")),
+            "version_resolution_status": (
+                "RESOLVED" if version else "INHERITED_UNRESOLVED" if has_parent_pom else "UNRESOLVED"
+            ),
             "scope": "build",
             "optional": False,
             "direct": True,
