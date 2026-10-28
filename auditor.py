@@ -1044,7 +1044,7 @@ def maven_metadata_url(group_id, artifact_id, repository_url=None):
 
 def is_prerelease(version):
     return bool(re.search(
-        r"(?i)(?:^|[._-])(alpha|beta|rc|milestone|snapshot|preview|nightly|dev|ea|cr)(?:[._-]?\\d+)?(?:$|[._-])",
+        r"(?i)(?:^|[._-])(alpha|beta|rc|milestone|snapshot|preview|nightly|dev|ea|cr)(?:[._-]?\d+)?(?:$|[._-])",
         str(version),
     ))
 
@@ -1632,7 +1632,7 @@ def enrich_report(report, online=True):
         "external_checks_enabled": bool(online),
         "internal_version_lookup_enabled": bool(internal_version_lookup),
         "checked_at": now_utc() if online else None,
-        "latest_version_source": "Maven Central metadata",
+        "latest_version_source": "configured Maven repository metadata" if internal_version_lookup else "Maven Central metadata",
         "vulnerability_source": "OSV.dev",
         "lifecycle_source": "endoflife.date where the product is catalogued",
         "java_lts_source": "Eclipse Adoptium available releases API",
@@ -2056,7 +2056,7 @@ def compact_report(report):
     elif not online:
         overall_status = "CHECK_INCOMPLETE"
         if internal_version_lookup:
-            status_message = "Configured Maven repository metadata was checked for latest versions; public vulnerability and lifecycle checks were skipped, so no components are marked OK."
+            status_message = "Configured Maven repository metadata was queried for latest versions where coordinates were available; public vulnerability and lifecycle checks were skipped, so no components are marked OK."
         else:
             status_message = "External version, vulnerability, and lifecycle checks were skipped; no components are being marked OK."
     elif review_items:
