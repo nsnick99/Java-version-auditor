@@ -2088,7 +2088,7 @@ def compact_report(report):
         },
     }
 
-def audit(project, online=True, resolve=False):
+def audit(project, online=True, resolve=False, build_offline=False):
     root = Path(project).expanduser().resolve()
     if not root.exists() or not root.is_dir():
         raise ValueError("Project path must be an existing directory: " + str(root))
@@ -2126,14 +2126,14 @@ def audit(project, online=True, resolve=False):
         }
         if resolve:
             if "Maven" in module["build_systems"]:
-                resolution = resolve_maven_tree(folder, offline=not online)
+                resolution = resolve_maven_tree(folder, offline=build_offline)
             elif "Gradle" in module["build_systems"]:
-                resolution = resolve_gradle_tree(folder, offline=not online)
+                resolution = resolve_gradle_tree(folder, offline=build_offline)
             else:
                 resolution = {"status": "NOT_APPLICABLE", "components": [], "message": "Ant resolution is not implemented."}
             apply_resolution(module, resolution)
             if "Maven" in module["build_systems"]:
-                effective_result = resolve_maven_effective_pom(folder, offline=not online)
+                effective_result = resolve_maven_effective_pom(folder, offline=build_offline)
                 apply_effective_model(module, effective_result)
         else:
             module["dependency_resolution"] = {
@@ -2189,7 +2189,11 @@ def cli():
     parser.add_argument("-o", "--output", help="Optional JSON report path (prints JSON when omitted)")
     parser.add_argument(
         "--offline", action="store_true",
-        help="Disable online release, lifecycle, and vulnerability lookups; with --resolve, use Maven/Gradle offline mode",
+        help="Disable external release, lifecycle, and vulnerability lookups. Build tools may still use configured internal repositories with --resolve.",
+    )
+    parser.add_argument(
+        "--build-offline", action="store_true",
+        help="Force Maven/Gradle resolution to use local caches only. Use this when no repository, including an internal mirror, is reachable.",
     )
     parser.add_argument(
         "--resolve", action="store_true",
@@ -2203,7 +2207,7 @@ def cli():
         parser.error("Project path must be a directory: " + str(project))
 
     try:
-        report = audit(project, online=not args.offline, resolve=args.resolve)
+        report = audit(project, online=not args.offline, resolve=args.resolve, build_offline=args.build_offline)
     except ValueError as error:
         parser.error(str(error))
     rendered = json.dumps(report, indent=2, ensure_ascii=False)
