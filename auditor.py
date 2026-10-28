@@ -837,60 +837,53 @@ def audit(
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Audit Java project for outdated versions")
+    parser = argparse.ArgumentParser(description="Audit Maven dependency versions and support status.")
     parser.add_argument("project", help="Path to Java project")
     parser.add_argument("-o", "--output", default="audit-report.json", help="Output JSON file")
-    parser.add_argument("--resolve", action="store_true", help="Run Maven/Gradle to resolve dependencies")
+    mode_group = parser.add_mutually_exclusive_group()
+    mode_group.add_argument(
+        "--internal-only", action="store_true",
+        help="Query only private/local Maven repositories declared in pom.xml; skip public lifecycle APIs",
+    )
+    mode_group.add_argument(
+        "--offline", action="store_true",
+        help="Make no network requests; perform static checks only",
+    )
+    parser.add_argument(
+        "--resolve", action="store_true",
+        help="Ask Maven for the effective POM to resolve parent/BOM-managed versions",
+    )
     args = parser.parse_args()
 
     try:
-        report = audit(args.project, resolve=args.resolve)
-    except ValueError as e:
-        parser.error(str(e))
+        report = audit(
+            args.project,
+            resolve=args.resolve,
+            internal_only=args.internal_only,
+            offline=args.offline,
+        )
+    except ValueError as error:
+        parser.error(str(error))
 
-    # Write report
     output = Path(args.output).expanduser()
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
-    # Print summary
-    print(f"Project: {report['project']['name']}")
-    print(f"Status: {report['summary']['status']}")
-    print(f"Outdated components: {report['summary']['outdated_components']}")
-    print(f"Outdated technologies: {report['summary']['outdated_technologies']}")
-    print(f"Total files analyzed: {report['fileSummary']['totalFiles']}")
-
-    if report["outdated_components"]:
-        print("\nComponents needing update:")
-        for item in report["outdated_components"]:
-            print(f"- {item['component']}")
-            print(f"  Module: {item['module']}")
-            print(f"  Name: {item['name']}")
-            print(f"  Current Version: {item['current_version']}")
-            print(f"  Latest Version: {item['latest_version']}")
-            print(f"  Reason: {item['reason']}")
-            print(f"  Explanation: {item['explanation']}")
-            print(f"  Status: {item['status']}")
-            print(f"  Action: {item['action']}")
-            print(f"  Source URL: {item['source_url']}")
-            print()
-
-    if report["outdated_technologies"]:
-        print("\nTechnologies needing update:")
-        for item in report["outdated_technologies"]:
-            print(f"- {item['component']}")
-            print(f"  Module: {item['module']}")
-            print(f"  Name: {item['name']}")
-            print(f"  Current Version: {item['current_version']}")
-            print(f"  Latest Version: {item['latest_version']}")
-            print(f"  Reason: {item['reason']}")
-            print(f"  Explanation: {item['explanation']}")
-            print(f"  Status: {item['status']}")
-            print(f"  Action: {item['action']}")
-            print(f"  Source URL: {item['source_url']}")
-            print()
-
-    print(f"Report saved to: {output}")
+    summary = report.get("summary", {})
+    checks = report.get("checks", {})
+    project = report.get("project", {})
+    project_name = project.get("name", "Unknown") if isinstance(project, dict) else project
+    print("Project: " + str(project_name))
+    print("Status: " + str(summary.get("status", "UNKNOWN")))
+    print(summary.get("message", ""))
+    print("Total dependencies: " + str(summary.get("total_dependencies", 0)))
+    print("Outdated components: " + str(summary.get("outdated_components", 0)))
+    print("Outdated technologies: " + str(summary.get("outdated_technologies", 0)))
+    print("Components needing review: " + str(summary.get("components_needing_review", 0)))
+    print("Checks: mode=" + str(checks.get("mode", "UNKNOWN"))
+          + ", latest_versions=" + str(checks.get("latest_versions", "UNKNOWN"))
+          + ", lifecycle=" + str(checks.get("lifecycle", "UNKNOWN")))
+    print("Report saved to: " + str(output))
 
 
 if __name__ == "__main__":
