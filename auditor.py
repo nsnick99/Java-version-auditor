@@ -1011,53 +1011,116 @@ def http_bytes(url, timeout=HTTP_TIMEOUT, accept="*/*"):
         return response.read()
 
 
-def maven_metadata_url(group_id, artifact_id):
+def configured_maven_repository_urls(pom_path):
+    """Read HTTP(S) repositories declared in a POM without exposing their URLs in reports."""
+    try:
+        root = ET.parse(pom_path).getroot()
+    except (ET.ParseError, OSError):
+        return []
+
+    urls = []
+    for container_name, repository_name in (
+        ("repositories", "repository"),
+        ("pluginRepositories", "pluginRepository"),
+    ):
+        for repository in children(child(root, container_name), repository_name):
+            url = text_child(repository, "url")
+            if not url:
+                continue
+            parsed = urllib.parse.urlparse(url)
+            if parsed.scheme.lower() in {"http", "https"} and parsed.netloc:
+                normalized = url.rstrip("/")
+                if normalized not in urls:
+                    urls.append(normalized)
+    return urls
+
+
+def maven_metadata_url(group_id, artifact_id, repository_url=None):
     group_path = "/".join(urllib.parse.quote(part, safe="") for part in str(group_id).split("."))
     artifact = urllib.parse.quote(str(artifact_id), safe="")
-    return "https://repo.maven.apache.org/maven2/" + group_path + "/" + artifact + "/maven-metadata.xml"
+    base = repository_url.rstrip("/") if repository_url else "https://repo.maven.apache.org/maven2"
+    return base + "/" + group_path + "/" + artifact + "/maven-metadata.xml"
 
 
 def is_prerelease(version):
     return bool(re.search(
-        r"(?i)(?:^|[._-])(alpha|beta|rc|milestone|snapshot|preview|nightly|dev|ea|cr)(?:[._-]?\d+)?(?:$|[._-])",
+        r"(?i)(?:^|[._-])(alpha|beta|rc|milestone|snapshot|preview|nightly|dev|ea|cr)(?:[._-]?\\d+)?(?:$|[._-])",
         str(version),
     ))
 
 
-def latest_maven_version(group_id, artifact_id):
+def latest_maven_version(group_id, artifact_id, repository_urls=None):
+    """Read the newest stable version from Maven metadata.
+
+    With repository_urls supplied, query only those project-configured repositories and
+    avoid returning their potentially internal URLs in the generated report.
+    """
     if not group_id or not artifact_id:
         return {"status": "NOT_APPLICABLE", "version": None, "url": None}
-    url = maven_metadata_url(group_id, artifact_id)
-    try:
-        raw = http_bytes(url, accept="application/xml,text/xml,*/*")
-        root = ET.fromstring(raw)
-    except urllib.error.HTTPError as error:
-        return {"status": "NOT_FOUND" if error.code == 404 else "UNAVAILABLE", "version": None, "url": url, "message": "HTTP " + str(error.code)}
-    except (urllib.error.URLError, TimeoutError, OSError, ET.ParseError, ValueError) as error:
-        return {"status": "UNAVAILABLE", "version": None, "url": url, "message": str(error)[:250]}
 
-    def xml_text(name):
-        node = child(root, name)
-        return (node.text or "").strip() if node is not None and node.text else None
+    internal_lookup = bool(repository_urls)
+    repository_bases = list(repository_urls) if internal_lookup else ["https://repo.maven.apache.org/maven2"]
+    last_failure = None
 
-    versions_node = child(child(root, "versioning"), "versions")
-    versions = [(item.text or "").strip() for item in children(versions_node, "version") if item.text]
-    stable = [version for version in versions if not is_prerelease(version)]
-    release = xml_text("release")
-    if release and not is_prerelease(release):
-        chosen = release
-    elif stable:
-        chosen = stable[0]
-        for version in stable[1:]:
-            if compare_versions(version, chosen) > 0:
-                chosen = version
-    else:
-        latest = xml_text("latest")
-        chosen = latest if latest and not is_prerelease(latest) else None
+    for repository_base in repository_bases:
+        url = maven_metadata_url(group_id, artifact_id, repository_base)
+        try:
+            raw = http_bytes(url, accept="application/xml,text/xml,*/*")
+            root = ET.fromstring(raw)
+        except urllib.error.HTTPError as error:
+            last_failure = {
+                "status": "NOT_FOUND" if error.code == 404 else "UNAVAILABLE",
+                "version": None,
+                "url": None if internal_lookup else url,
+                "message": "HTTP " + str(error.code),
+            }
+            continue
+        except (urllib.error.URLError, TimeoutError, OSError, ET.ParseError, ValueError) as error:
+            last_failure = {
+                "status": "UNAVAILABLE",
+                "version": None,
+                "url": None if internal_lookup else url,
+                "message": str(error)[:250],
+            }
+            continue
 
-    if not chosen:
-        return {"status": "NO_STABLE_RELEASE_FOUND", "version": None, "url": url}
-    return {"status": "FOUND", "version": chosen, "url": url}
+        def xml_text(name):
+            node = child(root, name)
+            return (node.text or "").strip() if node is not None and node.text else None
+
+        versions_node = child(child(root, "versioning"), "versions")
+        versions = [(item.text or "").strip() for item in children(versions_node, "version") if item.text]
+        stable = [version for version in versions if not is_prerelease(version)]
+        release = xml_text("release")
+        if release and not is_prerelease(release):
+            chosen = release
+        elif stable:
+            chosen = stable[0]
+            for version in stable[1:]:
+                if compare_versions(version, chosen) > 0:
+                    chosen = version
+        else:
+            latest = xml_text("latest")
+            chosen = latest if latest and not is_prerelease(latest) else None
+
+        if not chosen:
+            last_failure = {
+                "status": "NO_STABLE_RELEASE_FOUND",
+                "version": None,
+                "url": None if internal_lookup else url,
+            }
+            continue
+
+        return {
+            "status": "FOUND",
+            "version": chosen,
+            "url": None if internal_lookup else url,
+            "source": "configured Maven repository metadata" if internal_lookup else "Maven Central metadata",
+        }
+
+    if last_failure:
+        return last_failure
+    return {"status": "NOT_FOUND", "version": None, "url": None}
 
 
 def lifecycle_product(slug):
@@ -1322,6 +1385,10 @@ def latest_java_lts():
 
 
 def enrich_report(report, online=True):
+    configured_repositories = report.get("configured_maven_repositories", [])
+    internal_version_lookup = (not online) and bool(configured_repositories)
+    version_lookup_enabled = online or internal_version_lookup
+
     components = []
     for module in report["modules"]:
         for component in module.get("dependencies", []):
@@ -1343,7 +1410,7 @@ def enrich_report(report, online=True):
     osv_result = {"status": "SKIPPED", "findings": {}, "checked_count": 0}
     java_lts = {"status": "SKIPPED", "recommended_version": None}
 
-    if online:
+    if version_lookup_enabled:
         latest_keys = sorted({
             (item.get("group_id"), item.get("artifact_id"))
             for item in unique_components
@@ -1353,14 +1420,16 @@ def enrich_report(report, online=True):
         })
         if any(module["spring_boot"].get("version") for module in report["modules"]):
             latest_keys = sorted(set(latest_keys) | {("org.springframework.boot", "spring-boot-starter-parent")})
+        repositories_for_lookup = None if online else configured_repositories
         with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
             futures = {
-                pool.submit(latest_maven_version, group, artifact): (group, artifact)
+                pool.submit(latest_maven_version, group, artifact, repositories_for_lookup): (group, artifact)
                 for group, artifact in latest_keys
             }
             for future in concurrent.futures.as_completed(futures):
                 latest_map[futures[future]] = future.result()
 
+    if online:
         product_slugs = {
             slug for item in unique_components
             if item.get("version") and (slug := lifecycle_slug_for_component(item))
@@ -1387,7 +1456,7 @@ def enrich_report(report, online=True):
         version = component.get("version")
         component_key = (group, artifact, version)
         result = {
-            "status": "SKIPPED" if not online else "VERSION_NOT_RESOLVED",
+            "status": "SKIPPED" if not version_lookup_enabled else "VERSION_NOT_RESOLVED",
             "latest_version": None,
             "update_available": None,
             "change_level": None,
@@ -1397,7 +1466,7 @@ def enrich_report(report, online=True):
             "vulnerability_status": "SKIPPED" if not online else "VERSION_NOT_RESOLVED",
             "vulnerabilities": [],
         }
-        if online and version and group and artifact:
+        if version_lookup_enabled and version and group and artifact:
             if component.get("latest_lookup_supported") is False or group in {"unknown", "gradle.plugin"}:
                 result["status"] = "NOT_SUPPORTED_BY_MAVEN_CENTRAL_LOOKUP"
             else:
@@ -1405,6 +1474,7 @@ def enrich_report(report, online=True):
                 result["status"] = latest.get("status", "UNAVAILABLE")
                 result["latest_version"] = latest.get("version")
                 result["latest_source_url"] = latest.get("url")
+                result["latest_source"] = latest.get("source")
                 if latest.get("version"):
                     if not version_numbers(version) or not version_numbers(latest["version"]):
                         result["update_available"] = None
@@ -1420,7 +1490,7 @@ def enrich_report(report, online=True):
                                 "current_version": version,
                                 "recommended_version": latest["version"],
                                 "change_level": result["change_level"],
-                                "reason": "A newer stable release was found in Maven Central metadata; compatibility was not assessed.",
+                                "reason": "A newer stable release was found in " + str(latest.get("source") or "the configured version source") + "; compatibility was not assessed.",
                                 "source_url": latest.get("url"),
                             })
                         elif comparison == 0:
@@ -1431,30 +1501,31 @@ def enrich_report(report, online=True):
                 elif latest.get("message"):
                     result["lookup_message"] = latest["message"]
 
-            slug = lifecycle_slug_for_component(component)
-            if slug:
-                result["lifecycle"] = lifecycle_status(lifecycle_product_map.get(slug, {"status": "UNAVAILABLE"}), slug, version)
-                if result["lifecycle"].get("status") in {"EOL", "NOT_MAINTAINED", "OSS_SUPPORT_ENDED_EXTENDED_SUPPORT_AVAILABLE"}:
-                    lifecycle_findings.append({
-                        "component": group + ":" + artifact,
-                        "module": component.get("_module_path"),
-                        "version": version,
-                        **result["lifecycle"],
-                    })
-            osv = osv_result.get("findings", {}).get(component_key)
-            if osv is None:
-                result["vulnerability_status"] = "NOT_CHECKED"
-            else:
-                result["vulnerability_status"] = osv.get("status", "UNAVAILABLE")
-                result["vulnerability_message"] = osv.get("message")
-                result["vulnerabilities"] = osv.get("vulnerabilities", [])
-                for vuln in result["vulnerabilities"]:
-                    vulnerability_findings.append({
-                        "component": group + ":" + artifact,
-                        "module": component.get("_module_path"),
-                        "version": version,
-                        **vuln,
-                    })
+            if online:
+                slug = lifecycle_slug_for_component(component)
+                if slug:
+                    result["lifecycle"] = lifecycle_status(lifecycle_product_map.get(slug, {"status": "UNAVAILABLE"}), slug, version)
+                    if result["lifecycle"].get("status") in {"EOL", "NOT_MAINTAINED", "OSS_SUPPORT_ENDED_EXTENDED_SUPPORT_AVAILABLE"}:
+                        lifecycle_findings.append({
+                            "component": group + ":" + artifact,
+                            "module": component.get("_module_path"),
+                            "version": version,
+                            **result["lifecycle"],
+                        })
+                osv = osv_result.get("findings", {}).get(component_key)
+                if osv is None:
+                    result["vulnerability_status"] = "NOT_CHECKED"
+                else:
+                    result["vulnerability_status"] = osv.get("status", "UNAVAILABLE")
+                    result["vulnerability_message"] = osv.get("message")
+                    result["vulnerabilities"] = osv.get("vulnerabilities", [])
+                    for vuln in result["vulnerabilities"]:
+                        vulnerability_findings.append({
+                            "component": group + ":" + artifact,
+                            "module": component.get("_module_path"),
+                            "version": version,
+                            **vuln,
+                        })
         if result["deprecation"].get("status") != "NOT_VERIFIED":
             deprecation_findings.append({
                 "component": ((group or "unknown") + ":" + (artifact or "unknown")),
@@ -1480,7 +1551,7 @@ def enrich_report(report, online=True):
                 "source_note": None,
                 "version_check_status": "SKIPPED" if not online else "NOT_CHECKED",
             }
-            if online and detected:
+            if version_lookup_enabled and detected:
                 if key == "spring_boot":
                     latest = latest_map.get(
                         ("org.springframework.boot", "spring-boot-starter-parent"),
@@ -1503,7 +1574,7 @@ def enrich_report(report, online=True):
                                 "source_url": latest.get("url"),
                             }
                             recommendations.append(update)
-                else:
+                elif online:
                     technology["recommended_version"] = java_lts.get("recommended_version")
                     technology["source_url"] = java_lts.get("source_url")
                     technology["source_note"] = java_lts.get("basis")
@@ -1521,6 +1592,8 @@ def enrich_report(report, online=True):
                             "reason": java_lts.get("basis"),
                             "source_url": java_lts.get("source_url"),
                         })
+
+            if online and detected:
                 slug = "spring-boot" if key == "spring_boot" else "java"
                 product_data = lifecycle_product_map.get(slug, {"status": "UNAVAILABLE"})
                 technology["lifecycle"] = lifecycle_status(product_data, slug, detected)
@@ -1556,6 +1629,8 @@ def enrich_report(report, online=True):
     }
     report["version_intelligence"] = {
         "status": "COMPLETE" if online and osv_result.get("status") in {"COMPLETE", "NO_VERSIONED_COMPONENTS"} else ("PARTIAL" if online else "SKIPPED"),
+        "external_checks_enabled": bool(online),
+        "internal_version_lookup_enabled": bool(internal_version_lookup),
         "checked_at": now_utc() if online else None,
         "latest_version_source": "Maven Central metadata",
         "vulnerability_source": "OSV.dev",
@@ -1576,7 +1651,9 @@ def enrich_report(report, online=True):
 def compact_report(report):
     """Return only components that require action or review; summarize clean components."""
     scan_info = report.get("version_intelligence", {})
-    online = scan_info.get("status") != "SKIPPED"
+    online = scan_info.get("external_checks_enabled", scan_info.get("status") != "SKIPPED")
+    internal_version_lookup = scan_info.get("internal_version_lookup_enabled", False)
+    version_lookup_enabled = online or internal_version_lookup
     review_by_key = {}
     dependency_occurrences = 0
     components_ok = 0
@@ -1667,7 +1744,7 @@ def compact_report(report):
             elif current and recommended and (not version_numbers(current) or not version_numbers(recommended)):
                 item = new_item(module_path, label, "technology", current, None)
                 add_version_review(item, "VERSION_COMPARISON_UNCERTAIN", "The detected version cannot be compared reliably with the recommended version.", recommended, intelligence.get("source_url"))
-            elif current and online and not recommended:
+            elif current and version_lookup_enabled and not recommended and (online or label == "Spring Boot"):
                 item = new_item(module_path, label, "technology", current, None)
                 lookup_status = intelligence.get("version_check_status", "UNAVAILABLE")
                 details = intelligence.get("lookup_message") or ("Lookup status: " + str(lookup_status))
@@ -1702,14 +1779,17 @@ def compact_report(report):
                 })
 
             if current:
-                if online:
+                technology_version_lookup = online or (internal_version_lookup and label == "Spring Boot")
+                if technology_version_lookup:
                     version_check_values.append("CHECKED" if recommended else "INCOMPLETE")
+                else:
+                    version_check_values.append("SKIPPED")
+                if online:
                     if lifecycle in {"MAINTAINED", "EOL", "NOT_MAINTAINED", "OSS_SUPPORT_ENDED_EXTENDED_SUPPORT_AVAILABLE"}:
                         lifecycle_check_values.append("CHECKED")
                     elif lifecycle in {"UNAVAILABLE", "NOT_CATALOGUED", "CYCLE_NOT_FOUND", "UNKNOWN"}:
                         lifecycle_check_values.append("INCOMPLETE")
                 else:
-                    version_check_values.append("SKIPPED")
                     lifecycle_check_values.append("SKIPPED")
             elif online and module_component_count:
                 # An undetected Java version cannot be validated against the LTS or lifecycle sources.
@@ -1792,7 +1872,7 @@ def compact_report(report):
                 else:
                     add_version_review(item, "VERSION_UNKNOWN", "The dependency version could not be resolved from the project configuration.")
                 component_has_problem = True
-            elif online and lookup_status in {"UNAVAILABLE", "NOT_FOUND", "NO_STABLE_RELEASE_FOUND"}:
+            elif version_lookup_enabled and lookup_status in {"UNAVAILABLE", "NOT_FOUND", "NO_STABLE_RELEASE_FOUND"}:
                 item = new_item(module_path, coordinate, component_category, current, component.get("source"))
                 add_version_review(
                     item,
@@ -1802,15 +1882,15 @@ def compact_report(report):
                     details=intelligence.get("lookup_message") or ("Lookup status: " + str(lookup_status)),
                 )
                 component_has_problem = True
-            elif online and lookup_status == "NOT_SUPPORTED_BY_MAVEN_CENTRAL_LOOKUP":
+            elif version_lookup_enabled and lookup_status == "NOT_SUPPORTED_BY_MAVEN_CENTRAL_LOOKUP":
                 item = new_item(module_path, coordinate, component_category, current, component.get("source"))
                 add_version_review(item, "VERSION_CHECK_NOT_SUPPORTED", "This component is not supported by the Maven Central version lookup; verify its publisher or repository.")
                 component_has_problem = True
-            elif online and lookup_status in {"COMPARISON_UNSUPPORTED", "CURRENT_VERSION_NEWER_THAN_REGISTRY"}:
+            elif version_lookup_enabled and lookup_status in {"COMPARISON_UNSUPPORTED", "CURRENT_VERSION_NEWER_THAN_REGISTRY"}:
                 item = new_item(module_path, coordinate, component_category, current, component.get("source"))
                 add_version_review(item, "VERSION_COMPARISON_UNCERTAIN", "The current and latest versions could not be compared confidently.", latest, intelligence.get("latest_source_url"))
                 component_has_problem = True
-            elif online and lookup_status not in {"FOUND"} and update_available is not False:
+            elif version_lookup_enabled and lookup_status not in {"FOUND"} and update_available is not False:
                 item = new_item(module_path, coordinate, component_category, current, component.get("source"))
                 add_version_review(item, "VERSION_NOT_VERIFIED", "The analyzer could not confirm whether this version is current.", latest, intelligence.get("latest_source_url"))
                 component_has_problem = True
@@ -1891,12 +1971,13 @@ def compact_report(report):
                 })
                 component_has_problem = True
 
-            if online:
+            if version_lookup_enabled:
                 if current and lookup_status in {"FOUND"}:
                     version_check_values.append("CHECKED")
                 elif not current or lookup_status not in {"FOUND"}:
                     version_check_values.append("INCOMPLETE")
 
+            if online:
                 if current and vuln_status == "NO_MATCHING_ADVISORIES":
                     vulnerability_check_values.append("CHECKED")
                 elif vuln_status in {"VULNERABLE"} and vulnerabilities:
@@ -1954,16 +2035,18 @@ def compact_report(report):
     ))
 
     # Online checking is not the same as having complete coverage.
-    def check_state(values, online_enabled):
-        if not online_enabled:
+    def check_state(values, enabled):
+        if not enabled:
             return "SKIPPED"
         if not values:
             return "NOT_APPLICABLE"
-        if any(value == "INCOMPLETE" for value in values):
+        if all(value == "SKIPPED" for value in values):
+            return "SKIPPED"
+        if any(value in {"INCOMPLETE", "SKIPPED"} for value in values):
             return "PARTIAL"
         return "CHECKED"
 
-    version_check = check_state(version_check_values, online)
+    version_check = check_state(version_check_values, version_lookup_enabled)
     vulnerability_check = check_state(vulnerability_check_values, online)
     lifecycle_check = check_state(lifecycle_check_values, online)
 
@@ -1972,7 +2055,10 @@ def compact_report(report):
         status_message = "No supported build files were found."
     elif not online:
         overall_status = "CHECK_INCOMPLETE"
-        status_message = "Online checks were skipped; no components are being marked OK."
+        if internal_version_lookup:
+            status_message = "Configured Maven repository metadata was checked for latest versions; public vulnerability and lifecycle checks were skipped, so no components are marked OK."
+        else:
+            status_message = "External version, vulnerability, and lifecycle checks were skipped; no components are being marked OK."
     elif review_items:
         overall_status = "REVIEW_REQUIRED"
         if any(value in {"PARTIAL", "SKIPPED"} for value in (version_check, vulnerability_check, lifecycle_check)):
@@ -2029,6 +2115,11 @@ def compact_report(report):
             else "NOT_CONFIRMED" if not modules
             else "RESOLVED" if all(module.get("dependency_resolution", {}).get("status") in {"RESOLVED", "NOT_APPLICABLE"} for module in modules)
             else "REQUESTED_BUT_INCOMPLETE"
+        ),
+        "version_lookup_source": (
+            "CONFIGURED_MAVEN_REPOSITORIES" if internal_version_lookup
+            else "MAVEN_CENTRAL_METADATA" if online
+            else "NOT_CHECKED"
         ),
         "effective_pom_resolution": effective_pom_status,
         "effective_pom_details": [
@@ -2103,8 +2194,10 @@ def audit(project, online=True, resolve=False, build_offline=False):
         java_items = []
         boot_items = []
         components = []
+        module_repositories = []
         for path in sorted(build_files):
             if path.name == "pom.xml":
+                module_repositories.extend(configured_maven_repository_urls(path))
                 java, boot, found = maven(path, root)
             elif path.name.startswith(("build.gradle", "settings.gradle")):
                 java, boot, found = gradle(path, root)
@@ -2123,6 +2216,7 @@ def audit(project, online=True, resolve=False, build_offline=False):
             "java": finding(java_items),
             "spring_boot": finding(boot_items),
             "dependencies": components,
+            "configured_maven_repositories": list(dict.fromkeys(module_repositories)),
         }
         if resolve:
             if "Maven" in module["build_systems"]:
@@ -2176,6 +2270,9 @@ def audit(project, online=True, resolve=False, build_offline=False):
         "dependency_version_conflicts": dependency_conflicts,
         "version_inconsistencies": inconsistencies,
         "dependency_resolution_requested": bool(resolve),
+        "configured_maven_repositories": list(dict.fromkeys(
+            url for module in modules for url in module.get("configured_maven_repositories", [])
+        )),
     }
     enrich_report(report, online=online)
     return compact_report(report)
