@@ -2179,7 +2179,7 @@ def cli():
     parser.add_argument("-o", "--output", help="Optional JSON report path (prints JSON when omitted)")
     parser.add_argument(
         "--offline", action="store_true",
-        help="Disable online release, lifecycle, and vulnerability lookups",
+        help="Disable online release, lifecycle, and vulnerability lookups; with --resolve, use Maven/Gradle offline mode",
     )
     parser.add_argument(
         "--resolve", action="store_true",
