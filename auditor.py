@@ -544,9 +544,14 @@ def resolve_effective_pom(
         mirrors = settings_root.find(q("mirrors"))
         if mirrors is None:
             mirrors = ET.SubElement(settings_root, q("mirrors"))
+        mirror_id = internal_repo.get("id") or "internal-maven"
+        # Avoid duplicate IDs; a mirror inserted first takes precedence over other wildcard mirrors.
+        for old_mirror in list(mirrors):
+            if xml_text(old_mirror, "id") == mirror_id:
+                mirrors.remove(old_mirror)
         mirror = ET.Element(q("mirror"))
         # Reusing the repo ID lets Maven apply matching credentials from settings.xml.
-        ET.SubElement(mirror, q("id")).text = internal_repo.get("id") or "internal-maven"
+        ET.SubElement(mirror, q("id")).text = mirror_id
         ET.SubElement(mirror, q("mirrorOf")).text = "*"
         ET.SubElement(mirror, q("url")).text = internal_repo["url"]
         mirrors.insert(0, mirror)
