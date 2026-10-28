@@ -405,58 +405,102 @@ def count_files_and_types(root: Path) -> dict:
 
 # --- PARSERS ---
 def parse_pom(pom_path: Path, root: Path) -> dict:
+    """Parse direct Maven declarations with XML lookups scoped to each node."""
     try:
-        tree = ET.parse(pom_path)
-        root_elem = tree.getroot()
-    except Exception:
-        return {"java": None, "boot": None, "dependencies": []}
+        root_elem = ET.parse(pom_path).getroot()
+    except (ET.ParseError, OSError):
+        return {"java": None, "boot": None, "dependencies": [], "repositories": []}
 
-    def child(name: str) -> ET.Element | None:
-        return next((item for item in list(root_elem) if item.tag.split("}")[-1] == name), None)
+    properties_node = xml_child(root_elem, "properties")
+    properties = {
+        item.tag.split("}")[-1]: (item.text or "").strip()
+        for item in list(properties_node or [])
+        if item.text
+    }
 
-    def text_child(name: str) -> str | None:
-        elem = child(name)
-        return (elem.text or "").strip() if elem is not None and elem.text else None
+    def resolve_property(value: str | None) -> str | None:
+        if not value:
+            return None
+        result = value.strip()
+        for _ in range(8):
+            changed = False
+            for key, replacement in properties.items():
+                token = chr(36) + "{" + key + "}"
+                if token in result and replacement:
+                    result = result.replace(token, replacement)
+                    changed = True
+            if not changed:
+                break
+        return clean(result)
 
-    # Java version
     java = None
-    props = child("properties")
-    if props is not None:
-        for item in list(props):
-            name = item.tag.split("}")[-1]
-            val = (item.text or "").strip()
-            if name in {"java.version", "maven.compiler.source", "maven.compiler.target"}:
-                java = java_major(val)
+    for property_name in ("java.version", "maven.compiler.release", "maven.compiler.source", "maven.compiler.target", "jdk.version"):
+        value = resolve_property(properties.get(property_name))
+        if value:
+            java = java_major(value)
+            break
+    if java is None:
+        build = xml_child(root_elem, "build")
+        plugins = xml_child(build, "plugins")
+        for plugin in list(plugins or []):
+            if xml_text(plugin, "artifactId") != "maven-compiler-plugin":
+                continue
+            configuration = xml_child(plugin, "configuration")
+            value = resolve_property(
+                xml_text(configuration, "release")
+                or xml_text(configuration, "source")
+                or xml_text(configuration, "target")
+            )
+            java = java_major(value)
+            if java:
                 break
 
-    # Spring Boot version
-    boot = None
-    parent = child("parent")
-    if parent is not None:
-        pg = text_child("groupId")
-        pa = text_child("artifactId")
-        pv = text_child("version")
-        if pg == "org.springframework.boot" and pa == "spring-boot-starter-parent":
-            boot = clean(pv)
+    parent = xml_child(root_elem, "parent")
+    parent_group = xml_text(parent, "groupId")
+    parent_artifact = xml_text(parent, "artifactId")
+    parent_version = resolve_property(xml_text(parent, "version"))
+    boot = parent_version if (
+        parent_group == "org.springframework.boot" and parent_artifact == "spring-boot-starter-parent"
+    ) else None
 
-    # Dependencies
+    managed_versions = {}
+    management = xml_child(xml_child(root_elem, "dependencyManagement"), "dependencies")
+    for managed in list(management or []):
+        if managed.tag.split("}")[-1] != "dependency":
+            continue
+        group = resolve_property(xml_text(managed, "groupId"))
+        artifact = resolve_property(xml_text(managed, "artifactId"))
+        version = resolve_property(xml_text(managed, "version"))
+        if group and artifact and version:
+            managed_versions[(group, artifact)] = version
+
     deps = []
-    deps_node = child("dependencies")
-    if deps_node is not None:
-        for dep in list(deps_node):
-            group = text_child("groupId")
-            artifact = text_child("artifactId")
-            version = text_child("version")
-            if group and artifact:
-                deps.append({
-                    "group_id": group,
-                    "artifact_id": artifact,
-                    "version": clean(version),
-                    "scope": (text_child("scope") or "compile"),
-                    "optional": (text_child("optional") or "").lower() == "true",
-                })
+    deps_node = xml_child(root_elem, "dependencies")
+    for dep in list(deps_node or []):
+        if dep.tag.split("}")[-1] != "dependency":
+            continue
+        group = resolve_property(xml_text(dep, "groupId"))
+        artifact = resolve_property(xml_text(dep, "artifactId"))
+        version = resolve_property(xml_text(dep, "version"))
+        if not version and group and artifact:
+            version = managed_versions.get((group, artifact))
+        if group and artifact:
+            deps.append({
+                "group_id": group,
+                "artifact_id": artifact,
+                "version": version,
+                "scope": resolve_property(xml_text(dep, "scope")) or "compile",
+                "optional": (resolve_property(xml_text(dep, "optional")) or "").lower() == "true",
+            })
 
-    return {"java": java, "boot": boot, "dependencies": deps}
+    return {
+        "java": java,
+        "boot": boot,
+        "dependencies": deps,
+        "repositories": configured_maven_repositories(pom_path),
+    }
+
+
 
 
 def audit(project: str, resolve: bool = False) -> dict:
