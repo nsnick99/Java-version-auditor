@@ -16,6 +16,22 @@ python auditor.py "C:\Users\YourName\Desktop\Java-test"
 
 The script writes `output.json` in the scanned Java project's root directory. The report includes `auditor_version`, `generated_at`, and `project_path` so you can verify which run produced it. There are no optional command-line modes.
 
+## Code structure
+
+The implementation is split into focused Python modules:
+
+- `auditor.py`: small entry point; keeps the same one-command usage
+- `java_auditor/cli.py`: command-line execution and JSON output
+- `java_auditor/config.py`: detection rules and constants
+- `java_auditor/utils.py`: shared text, path, version, and process helpers
+- `java_auditor/build_files.py`: Maven, Gradle, and Ant build-file parsing
+- `java_auditor/dependency_resolver.py`: Maven/Gradle dependency-tree resolution
+- `java_auditor/version_checker.py`: Maven Central metadata and framework/dependency version advice
+- `java_auditor/project_scanner.py`: missing Gradle-module checks and selected deprecated API scans
+- `java_auditor/report_builder.py`: audit orchestration and report construction
+
+Run it from the repository folder using the same command shown above. No third-party Python packages are required.
+
 ## What appears in the report
 
 - Java/build versions and module inventory
