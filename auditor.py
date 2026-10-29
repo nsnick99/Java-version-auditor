@@ -446,6 +446,7 @@ def resolve_maven_updates(info, root):
         f"org.codehaus.mojo:versions-maven-plugin:{plugin_version}:display-dependency-updates",
         f"org.codehaus.mojo:versions-maven-plugin:{plugin_version}:display-parent-updates",
     ]
+    progress(f"Running Maven Versions Plugin for {rel(info['path'], root)} (timeout: {TOOL_TIMEOUT}s)...")
     code, stdout, stderr = run_command(command, root, TOOL_TIMEOUT)
     parsed = parse_versions_plugin_output((stdout or "") + "\n" + (stderr or ""))
     if parsed:
@@ -463,6 +464,7 @@ def resolve_dependency_tree(info, root):
         if not launcher:
             return [], "Maven executable or Maven wrapper not found"
         command = launcher + ["-B", "-f", str(info["path"].resolve()), "dependency:tree", "-DoutputType=text", "-Dstyle.color=never"]
+        progress(f"Running Maven dependency tree for {rel(info['path'], root)} (timeout: {TOOL_TIMEOUT}s)...")
         code, stdout, stderr = run_command(command, root, TOOL_TIMEOUT)
         if code:
             lines = (stderr.strip() or stdout.strip() or f"Maven exited with code {code}").splitlines()
@@ -476,6 +478,7 @@ def resolve_dependency_tree(info, root):
         if not launcher:
             return [], "Gradle executable or Gradle wrapper not found"
         command = launcher + ["-q", "-p", str(info["path"].parent.resolve()), "dependencies", "--configuration", "runtimeClasspath"]
+        progress(f"Running Gradle dependency report for {rel(info['path'], root)} (timeout: {TOOL_TIMEOUT}s)...")
         code, stdout, stderr = run_command(command, root, TOOL_TIMEOUT)
         if code:
             lines = (stderr.strip() or stdout.strip() or f"Gradle exited with code {code}").splitlines()
@@ -729,6 +732,12 @@ def build_report(project_path):
                 maven_update_records.append(update_data)
             elif update_error:
                 resolution_notes.append({"module": rel(info["path"].parent, root), "message": update_error})
+                issues.append({
+                    "title": "Latest-version check incomplete",
+                    "severity": "MEDIUM",
+                    "path": rel(info["path"], root),
+                    "message": update_error + ". Newer dependency or parent versions may be missing from this report.",
+                })
         if resolution_error:
             resolution_notes.append({"module": rel(info["path"].parent, root), "message": resolution_error})
             issues.append({
@@ -937,7 +946,7 @@ def build_report(project_path):
         "analysis_notes": [
             "No application runtime checks or build/test validation are performed.",
             "Latest/recommended versions use Maven Central metadata with Maven Versions Plugin fallback; a component is listed for updating only when a newer release is established.",
-        ] + ([f"Dependency resolution was incomplete for {len(resolution_notes)} module(s); see Issues."] if resolution_notes else []),
+        ] + ([f"Dependency/version checks were incomplete for {len(resolution_notes)} module(s); see Issues for the diagnostic."] if resolution_notes else []),
     }
 
 
