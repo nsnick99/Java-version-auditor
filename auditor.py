@@ -13,8 +13,8 @@ import urllib.request
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-# Change this value if the intended Java target changes.
-TARGET_JAVA_VERSION = "21"
+# Java versions below this baseline are flagged as needing changes.
+MINIMUM_JAVA_VERSION = "8"
 HTTP_TIMEOUT = 3
 TOOL_TIMEOUT = 60
 SKIP_DIRS = {".git", "target", "build", "out", "bin", "node_modules", ".gradle", "__pycache__", ".venv", "venv"}
@@ -460,20 +460,35 @@ def maven_metadata(group, artifact):
 
 
 def version_advice(current, metadata):
-    versions = metadata.get("versions", [])
+    versions = list(metadata.get("versions", []) or [])
+    metadata_latest = metadata.get("latest_version")
+    if metadata_latest and metadata_latest not in versions:
+        versions.append(metadata_latest)
+    versions = sorted({v for v in versions if version_tuple(v)}, key=version_sort_key)
+
     if not current or not version_tuple(current):
-        return {"latest_version": metadata.get("latest_version"), "recommended_version": None, "version_status": "VERSION_UNKNOWN"}
+        return {
+            "latest_version": metadata_latest or "Unavailable",
+            "recommended_version": "Resolve version",
+            "version_status": "NEEDS_CHANGES",
+        }
     if not versions:
-        return {"latest_version": None, "recommended_version": None, "version_status": "NOT_VERIFIED"}
-    major = version_tuple(current)[0]
-    same_major = [v for v in versions if version_tuple(v) and version_tuple(v)[0] == major]
-    same_major_latest = same_major[-1] if same_major else None
+        return {
+            "latest_version": "Unavailable",
+            "recommended_version": "Unavailable",
+            "version_status": "CHECK_UNAVAILABLE",
+        }
+
     latest = versions[-1]
+    current_major = version_tuple(current)[0]
+    same_major = [v for v in versions if version_tuple(v) and version_tuple(v)[0] == current_major]
+    same_major_latest = same_major[-1] if same_major else None
+
     if same_major_latest and compare_versions(current, same_major_latest) < 0:
-        return {"latest_version": latest, "recommended_version": same_major_latest, "version_status": "OUTDATED"}
+        return {"latest_version": latest, "recommended_version": same_major_latest, "version_status": "NEEDS_UPDATE"}
     if compare_versions(current, latest) < 0:
-        return {"latest_version": latest, "recommended_version": latest, "version_status": "NEWER_MAJOR_AVAILABLE"}
-    return {"latest_version": latest, "recommended_version": current, "version_status": "CURRENT_OR_NEWER"}
+        return {"latest_version": latest, "recommended_version": latest, "version_status": "MAJOR_UPDATE_AVAILABLE"}
+    return {"latest_version": latest, "recommended_version": current, "version_status": "CURRENT"}
 
 
 def fetch_metadata_for(coords):
