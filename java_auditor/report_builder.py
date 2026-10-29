@@ -149,6 +149,11 @@ def build_report(project_path):
             item["version_status"] = "VERSION_UNRESOLVED"
         dependencies.append(item)
 
+    dependency_status_counts = {}
+    for dep in dependencies:
+        status = dep.get("version_status") or "UNKNOWN"
+        dependency_status_counts[status] = dependency_status_counts.get(status, 0) + 1
+
     frameworks = []
     for info in module_infos:
         module_key = rel(info["path"].parent, root)
@@ -159,6 +164,7 @@ def build_report(project_path):
     for item in frameworks:
         framework_unique[(item["name"], item.get("module"), item["version"])] = item
     frameworks = sorted(framework_unique.values(), key=lambda x: (x["name"], str(x.get("module")), str(x.get("version"))))
+    frameworks_detected_count = len(frameworks)
 
     java_versions = [m["java_version"] for m in module_details if m["java_version"] not in {"Not detected", "Multiple"}]
     current_java = "Multiple" if any(m["java_version"] == "Multiple" for m in module_details) or len(set(java_versions)) > 1 else (java_versions[0] if java_versions else "Not detected")
@@ -270,6 +276,20 @@ def build_report(project_path):
         "build_system": build_system,
         "current_java": current_java,
         "minimum_java": MINIMUM_JAVA_VERSION,
+        "scan_summary": {
+            "build_files_found": len(build_files),
+            "modules_analyzed": len(module_details),
+            "dependencies_detected": len(dependencies),
+            "dependencies_with_updates": sum(
+                1 for dep in dependencies
+                if dep.get("version_status") in {"NEEDS_UPDATE", "MAJOR_UPDATE_AVAILABLE"}
+            ),
+            "dependency_status_counts": dict(sorted(dependency_status_counts.items())),
+            "frameworks_detected_before_update_filter": frameworks_detected_count,
+            "framework_updates_reported": len(frameworks),
+            "missing_references_found": len(missing_files),
+            "dependency_resolution_diagnostics": resolution_notes,
+        },
         "modules": module_details,
         "frameworks": frameworks,
         "dependencies": [
