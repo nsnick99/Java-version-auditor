@@ -1,98 +1,356 @@
 {
-  "schema_version": "1.1",
-  "project": "Smallest-spring-boot-sample",
-  "scan": {
-    "mode": "ONLINE",
-    "build_system": "Maven",
-    "dependency_resolution": "STATIC_ONLY",
-    "project_detected": true
-  },
-  "summary": {
-    "status": "REVIEW_REQUIRED",
-    "message": "4 component(s) need review; some checks are incomplete. Components without detected issues are summarized as OK.",
-    "modules": 1,
-    "components_scanned": 3,
-    "components_ok": 0,
-    "components_needing_review": 4,
-    "updates_available": 0,
-    "known_vulnerabilities": 0,
-    "lifecycle_warnings": 0,
-    "version_conflicts": 0
-  },
-  "review_items": [
+  "schema_version": "2.0",
+  "generated_at": "2026-10-29T07:17:53+00:00",
+  "project": "Java_Full_Stack_Project",
+  "build_system": "Maven",
+  "detected_build_systems": [
+    "Maven"
+  ],
+  "modules": [
     {
-      "module": "SmallestSpringApp",
-      "component": "Java",
-      "category": "technology",
-      "current_version": null,
-      "source_file": null,
-      "issues": [
-        {
-          "type": "VERSION_NOT_DETECTED",
-          "severity": "REVIEW",
-          "message": "No Java version was detected in this module's build configuration."
-        }
-      ],
-      "recommended_action": "Manually verify the version or check coverage"
-    },
-    {
-      "module": "SmallestSpringApp",
-      "component": "Spring Boot",
-      "category": "technology",
-      "current_version": "1.2.0.RELEASE",
-      "source_file": null,
-      "issues": [
-        {
-          "type": "LIFECYCLE_CHECK_INCOMPLETE",
-          "severity": "REVIEW",
-          "message": "The lifecycle/support status could not be verified.",
-          "details": "HTTP 403",
-          "source_url": "https://endoflife.date/api/v1/products/spring-boot"
-        },
-        {
-          "type": "VERSION_CHECK_INCOMPLETE",
-          "severity": "REVIEW",
-          "message": "The recommended version could not be verified; this technology cannot be marked OK.",
-          "source_url": "https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-starter-parent/maven-metadata.xml",
-          "details": "HTTP 403"
-        }
-      ],
-      "recommended_action": "Manually verify the version or check coverage"
-    },
-    {
-      "module": "SmallestSpringApp",
-      "component": "org.springframework.boot:spring-boot-maven-plugin",
-      "category": "build_plugin",
-      "current_version": null,
-      "source_file": "SmallestSpringApp/pom.xml",
-      "issues": [
-        {
-          "type": "VERSION_UNKNOWN",
-          "severity": "REVIEW",
-          "message": "The dependency version could not be resolved from the project configuration."
-        }
-      ],
-      "recommended_action": "Manually verify the version or check coverage"
-    },
-    {
-      "module": "SmallestSpringApp",
-      "component": "org.springframework.boot:spring-boot-starter-web",
-      "category": "dependency",
-      "current_version": null,
-      "source_file": "SmallestSpringApp/pom.xml",
-      "issues": [
-        {
-          "type": "VERSION_UNKNOWN",
-          "severity": "REVIEW",
-          "message": "The dependency version could not be resolved from the project configuration."
-        }
-      ],
-      "recommended_action": "Manually verify the version or check coverage"
+      "path": "backend",
+      "build_system": "Maven",
+      "build_file": "backend/pom.xml",
+      "java": {
+        "status": "DETECTED",
+        "version": "11",
+        "evidence": [
+          {
+            "version": "11",
+            "source": "pom.xml:properties.java.version"
+          }
+        ]
+      },
+      "spring_boot": {
+        "status": "DETECTED",
+        "version": "2.7.5",
+        "evidence": [
+          {
+            "version": "2.7.5",
+            "source": "pom.xml:parent.version"
+          }
+        ]
+      },
+      "dependency_count": 13,
+      "parse_error": null
     }
   ],
+  "java": {
+    "status": "DETECTED",
+    "version": "11",
+    "evidence": [
+      {
+        "version": "11",
+        "source": "pom.xml:properties.java.version"
+      }
+    ]
+  },
+  "spring_boot": {
+    "status": "DETECTED",
+    "version": "2.7.5",
+    "evidence": [
+      {
+        "version": "2.7.5",
+        "source": "pom.xml:parent.version"
+      }
+    ]
+  },
+  "frameworks": [
+    {
+      "name": "Spring Boot",
+      "components": [
+        {
+          "group_id": "org.springframework.boot",
+          "artifact_id": "spring-boot-starter-web",
+          "version": null,
+          "source": "/mnt/MyDocuments/Java-Project/Java_Full_Stack_Project/backend/pom.xml"
+        },
+        {
+          "group_id": "org.springframework.boot",
+          "artifact_id": "spring-boot-starter-data-jpa",
+          "version": null,
+          "source": "/mnt/MyDocuments/Java-Project/Java_Full_Stack_Project/backend/pom.xml"
+        },
+        {
+          "group_id": "org.springframework.boot",
+          "artifact_id": "spring-boot-starter-data-mongodb",
+          "version": null,
+          "source": "/mnt/MyDocuments/Java-Project/Java_Full_Stack_Project/backend/pom.xml"
+        },
+        {
+          "group_id": "org.springframework.boot",
+          "artifact_id": "spring-boot-starter-security",
+          "version": null,
+          "source": "/mnt/MyDocuments/Java-Project/Java_Full_Stack_Project/backend/pom.xml"
+        },
+        {
+          "group_id": "org.springframework.boot",
+          "artifact_id": "spring-boot-starter-test",
+          "version": null,
+          "source": "/mnt/MyDocuments/Java-Project/Java_Full_Stack_Project/backend/pom.xml"
+        },
+        {
+          "group_id": "org.springframework.boot",
+          "artifact_id": "spring-boot-devtools",
+          "version": null,
+          "source": "/mnt/MyDocuments/Java-Project/Java_Full_Stack_Project/backend/pom.xml"
+        }
+      ]
+    },
+    {
+      "name": "Spring Security",
+      "components": [
+        {
+          "group_id": "org.springframework.security",
+          "artifact_id": "spring-security-crypto",
+          "version": null,
+          "source": "/mnt/MyDocuments/Java-Project/Java_Full_Stack_Project/backend/pom.xml"
+        }
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "group_id": "org.springframework.boot",
+      "artifact_id": "spring-boot-starter-web",
+      "version": null,
+      "version_source": "managed_or_transitive",
+      "scope": "compile",
+      "optional": false,
+      "source": "/mnt/MyDocuments/Java-Project/Java_Full_Stack_Project/backend/pom.xml",
+      "latest_version": null,
+      "update_available": null,
+      "version_status": "UNKNOWN",
+      "latest_check": {
+        "status": "SKIPPED"
+      }
+    },
+    {
+      "group_id": "org.springframework.boot",
+      "artifact_id": "spring-boot-starter-data-jpa",
+      "version": null,
+      "version_source": "managed_or_transitive",
+      "scope": "compile",
+      "optional": false,
+      "source": "/mnt/MyDocuments/Java-Project/Java_Full_Stack_Project/backend/pom.xml",
+      "latest_version": null,
+      "update_available": null,
+      "version_status": "UNKNOWN",
+      "latest_check": {
+        "status": "SKIPPED"
+      }
+    },
+    {
+      "group_id": "org.springframework.boot",
+      "artifact_id": "spring-boot-starter-data-mongodb",
+      "version": null,
+      "version_source": "managed_or_transitive",
+      "scope": "compile",
+      "optional": false,
+      "source": "/mnt/MyDocuments/Java-Project/Java_Full_Stack_Project/backend/pom.xml",
+      "latest_version": null,
+      "update_available": null,
+      "version_status": "UNKNOWN",
+      "latest_check": {
+        "status": "SKIPPED"
+      }
+    },
+    {
+      "group_id": "com.mysql",
+      "artifact_id": "mysql-connector-j",
+      "version": "8.0.33",
+      "version_source": "direct",
+      "scope": "runtime",
+      "optional": false,
+      "source": "/mnt/MyDocuments/Java-Project/Java_Full_Stack_Project/backend/pom.xml",
+      "latest_version": null,
+      "update_available": null,
+      "version_status": "UNKNOWN",
+      "latest_check": {
+        "status": "UNAVAILABLE",
+        "version": null,
+        "source": "https://repo.maven.apache.org/maven2/com/mysql/mysql-connector-j/maven-metadata.xml"
+      }
+    },
+    {
+      "group_id": "org.projectlombok",
+      "artifact_id": "lombok",
+      "version": "1.18.30",
+      "version_source": "direct",
+      "scope": "provided",
+      "optional": false,
+      "source": "/mnt/MyDocuments/Java-Project/Java_Full_Stack_Project/backend/pom.xml",
+      "latest_version": null,
+      "update_available": null,
+      "version_status": "UNKNOWN",
+      "latest_check": {
+        "status": "UNAVAILABLE",
+        "version": null,
+        "source": "https://repo.maven.apache.org/maven2/org/projectlombok/lombok/maven-metadata.xml"
+      }
+    },
+    {
+      "group_id": "org.springframework.boot",
+      "artifact_id": "spring-boot-starter-security",
+      "version": null,
+      "version_source": "managed_or_transitive",
+      "scope": "compile",
+      "optional": false,
+      "source": "/mnt/MyDocuments/Java-Project/Java_Full_Stack_Project/backend/pom.xml",
+      "latest_version": null,
+      "update_available": null,
+      "version_status": "UNKNOWN",
+      "latest_check": {
+        "status": "SKIPPED"
+      }
+    },
+    {
+      "group_id": "io.jsonwebtoken",
+      "artifact_id": "jjwt",
+      "version": "0.9.1",
+      "version_source": "direct",
+      "scope": "compile",
+      "optional": false,
+      "source": "/mnt/MyDocuments/Java-Project/Java_Full_Stack_Project/backend/pom.xml",
+      "latest_version": null,
+      "update_available": null,
+      "version_status": "UNKNOWN",
+      "latest_check": {
+        "status": "UNAVAILABLE",
+        "version": null,
+        "source": "https://repo.maven.apache.org/maven2/io/jsonwebtoken/jjwt/maven-metadata.xml"
+      }
+    },
+    {
+      "group_id": "org.springframework.boot",
+      "artifact_id": "spring-boot-starter-test",
+      "version": null,
+      "version_source": "managed_or_transitive",
+      "scope": "test",
+      "optional": false,
+      "source": "/mnt/MyDocuments/Java-Project/Java_Full_Stack_Project/backend/pom.xml",
+      "latest_version": null,
+      "update_available": null,
+      "version_status": "UNKNOWN",
+      "latest_check": {
+        "status": "SKIPPED"
+      }
+    },
+    {
+      "group_id": "com.github.javafaker",
+      "artifact_id": "javafaker",
+      "version": "1.0.2",
+      "version_source": "direct",
+      "scope": "compile",
+      "optional": false,
+      "source": "/mnt/MyDocuments/Java-Project/Java_Full_Stack_Project/backend/pom.xml",
+      "latest_version": null,
+      "update_available": null,
+      "version_status": "UNKNOWN",
+      "latest_check": {
+        "status": "UNAVAILABLE",
+        "version": null,
+        "source": "https://repo.maven.apache.org/maven2/com/github/javafaker/javafaker/maven-metadata.xml"
+      }
+    },
+    {
+      "group_id": "org.springdoc",
+      "artifact_id": "springdoc-openapi-ui",
+      "version": "1.7.0",
+      "version_source": "direct",
+      "scope": "compile",
+      "optional": false,
+      "source": "/mnt/MyDocuments/Java-Project/Java_Full_Stack_Project/backend/pom.xml",
+      "latest_version": null,
+      "update_available": null,
+      "version_status": "UNKNOWN",
+      "latest_check": {
+        "status": "UNAVAILABLE",
+        "version": null,
+        "source": "https://repo.maven.apache.org/maven2/org/springdoc/springdoc-openapi-ui/maven-metadata.xml"
+      }
+    },
+    {
+      "group_id": "org.springframework.boot",
+      "artifact_id": "spring-boot-devtools",
+      "version": null,
+      "version_source": "managed_or_transitive",
+      "scope": "compile",
+      "optional": true,
+      "source": "/mnt/MyDocuments/Java-Project/Java_Full_Stack_Project/backend/pom.xml",
+      "latest_version": null,
+      "update_available": null,
+      "version_status": "UNKNOWN",
+      "latest_check": {
+        "status": "SKIPPED"
+      }
+    },
+    {
+      "group_id": "org.mongodb",
+      "artifact_id": "mongodb-driver-sync",
+      "version": null,
+      "version_source": "managed_or_transitive",
+      "scope": "compile",
+      "optional": false,
+      "source": "/mnt/MyDocuments/Java-Project/Java_Full_Stack_Project/backend/pom.xml",
+      "latest_version": null,
+      "update_available": null,
+      "version_status": "UNKNOWN",
+      "latest_check": {
+        "status": "SKIPPED"
+      }
+    },
+    {
+      "group_id": "org.springframework.security",
+      "artifact_id": "spring-security-crypto",
+      "version": null,
+      "version_source": "managed_or_transitive",
+      "scope": "compile",
+      "optional": false,
+      "source": "/mnt/MyDocuments/Java-Project/Java_Full_Stack_Project/backend/pom.xml",
+      "latest_version": null,
+      "update_available": null,
+      "version_status": "UNKNOWN",
+      "latest_check": {
+        "status": "SKIPPED"
+      }
+    }
+  ],
+  "dependency_count": 13,
+  "vulnerabilities": [],
+  "deprecated_apis": [],
+  "compatibility_checks": [],
+  "lifecycle": {
+    "java": {
+      "status": "UNAVAILABLE",
+      "product": "java"
+    },
+    "spring_boot": {
+      "status": "UNAVAILABLE",
+      "product": "spring-boot"
+    }
+  },
+  "build_validation": {
+    "status": "FAIL",
+    "command": "mvn -q -DskipTests package",
+    "exit_code": 1,
+    "stdout_tail": "[\u001b[1;31mERROR\u001b[m] The goal you specified requires a project to execute but there is no POM in this directory (/mnt/MyDocuments/Java-Project/Java_Full_Stack_Project). Please verify you invoked Maven from the correct directory. -> \u001b[1m[Help 1]\u001b[m\n[\u001b[1;31mERROR\u001b[m] \n[\u001b[1;31mERROR\u001b[m] To see the full stack trace of the errors, re-run Maven with the \u001b[1m-e\u001b[m switch.\n[\u001b[1;31mERROR\u001b[m] Re-run Maven using the \u001b[1m-X\u001b[m switch to enable full debug logging.\n[\u001b[1;31mERROR\u001b[m] \n[\u001b[1;31mERROR\u001b[m] For more information about the errors and possible solutions, please read the following articles:\n[\u001b[1;31mERROR\u001b[m] \u001b[1m[Help 1]\u001b[m http://cwiki.apache.org/confluence/display/MAVEN/MissingProjectException\n",
+    "stderr_tail": ""
+  },
+  "runtime_check": {
+    "status": "NOT_RUN"
+  },
   "checks": {
-    "latest_versions": "PARTIAL",
-    "vulnerabilities": "PARTIAL",
-    "lifecycle": "PARTIAL"
-  }
+    "latest_versions": "enabled",
+    "osv_vulnerabilities": {
+      "status": "UNAVAILABLE",
+      "message": "HTTP Error 403: Forbidden"
+    },
+    "deprecated_api_scan": "complete",
+    "build_validation": "complete",
+    "runtime_check": "not_run"
+  },
+  "notes": [
+    "Technology/version audit only. No migration readiness score or migration plan is generated."
+  ]
 }
