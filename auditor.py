@@ -136,9 +136,10 @@ def resolve_path_expression(value, basedir, properties=None):
 
 
 def read_pom(pom, root):
-    info = {"path": pom, "java_versions": [], "boot_versions": [], "direct_dependencies": [], "project_coordinates": None, "missing_files": [], "error": None}
+    info = {"path": pom, "java_versions": [], "boot_versions": [], "direct_dependencies": [], "project_coordinates": None, "missing_files": [], "error": None, "is_aggregator": False}
     try:
         document = ET.parse(pom).getroot()
+        info["is_aggregator"] = (node_text(document, "packaging") or "jar") == "pom" and child(document, "modules") is not None
     except Exception as exc:
         info["error"] = str(exc)
         return info
@@ -408,9 +409,12 @@ def resolve_dependency_tree(info, root):
 def merge_dependencies(info, tree_deps):
     direct = {(d["group_id"], d["artifact_id"]): d for d in info["direct_dependencies"]}
     merged = {}
+    resolved_coordinates = set()
     for dep in tree_deps:
         item = dict(dep)
-        declaration = direct.get((dep["group_id"], dep["artifact_id"]))
+        coordinate = (dep["group_id"], dep["artifact_id"])
+        resolved_coordinates.add(coordinate)
+        declaration = direct.get(coordinate)
         if declaration:
             item["direct"] = True
             item["version_source"] = declaration["version_source"]
@@ -418,6 +422,10 @@ def merge_dependencies(info, tree_deps):
             item["source"] = declaration["source"]
         merged[(item["group_id"], item["artifact_id"], item.get("version"))] = item
     for dep in info["direct_dependencies"]:
+        coordinate = (dep["group_id"], dep["artifact_id"])
+        if coordinate in resolved_coordinates:
+            # The resolved tree supplies the effective version; do not add a duplicate null-version row.
+            continue
         key = (dep["group_id"], dep["artifact_id"], dep.get("version"))
         if key not in merged:
             merged[key] = dict(dep)
@@ -616,7 +624,10 @@ def build_report(project_path):
     all_dependencies = []
     resolution_notes = []
     for info in module_infos:
-        tree, resolution_error = resolve_dependency_tree(info, root)
+        if info.get("is_aggregator") and not info["direct_dependencies"]:
+            tree, resolution_error = [], None
+        else:
+            tree, resolution_error = resolve_dependency_tree(info, root)
         if resolution_error:
             resolution_notes.append({"module": rel(info["path"].parent, root), "message": resolution_error})
             issues.append({
