@@ -897,7 +897,7 @@ def build_report(project_path):
         "recommendations": recommendations,
         "analysis_notes": [
             "No application runtime checks or build/test validation are performed.",
-            "Latest/recommended versions use Maven Central metadata; unavailable metadata is left unverified.",
+            "Latest/recommended versions use Maven Central metadata with Maven Versions Plugin fallback; a component is listed for updating only when a newer release is established.",
         ] + ([f"Dependency resolution was incomplete for {len(resolution_notes)} module(s); see Issues."] if resolution_notes else []),
     }
 
