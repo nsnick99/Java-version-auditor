@@ -851,6 +851,21 @@ def build_report(project_path):
                     "reason": "Framework update identified from Maven Central metadata; verify Java requirements and release notes.",
                 })
 
+    for item in frameworks:
+        if item.get("version_status") != "NEEDS_CHANGES" or item.get("name") != "Spring Boot":
+            continue
+        module = next((m for m in module_details if m.get("path") == item.get("module")), None)
+        current_java_version = java_major(module.get("java_version")) if module else None
+        if current_java_version and int(current_java_version) < 17:
+            recommendations.append({
+                "component": "Java runtime",
+                "module": item.get("module"),
+                "current_version": current_java_version,
+                "recommended_version": "17",
+                "version_status": "NEEDS_CHANGES",
+                "reason": f"Spring Boot {item['version']} requires Java 17 or newer.",
+            })
+
     for module in module_details:
         current = module.get("java_version")
         detected = java_major(current) if current not in {"Not detected", "Multiple"} else None
