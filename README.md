@@ -1,86 +1,111 @@
 # Java Version Auditor
 
-A focused Java project auditor that lists **only components needing attention**. Components with no detected issue are summarized as OK instead of being repeated in the report. It does not calculate an overall migration-readiness score.
+A Java project auditor focused on technology/version analysis. It does **not** calculate migration readiness or generate a migration plan.
 
-## Run
+## Scanner engine
 
-~~~bash
-python main.py /path/to/java-project
-~~~
+1. Repository/build discovery
+2. Java and Spring Boot version detection
+3. Dependency inventory and version resolution
+4. Framework identification
+5. Latest-version intelligence
+6. Vulnerability checks through OSV
+7. Lifecycle/EOL checks for supported technology families
+8. Deprecated JDK API detection
+9. Compatibility checks
+10. Optional build validation
+11. Optional runtime/health check
+12. JSON audit report
 
-Save the report to a JSON file:
+## Frameworks detected
 
-~~~bash
-python main.py /path/to/java-project --output audit-report.json
-~~~
+- Spring Boot
+- Spring MVC
+- Spring Security
+- Hibernate
+- Struts
+- JSF
+- Apache Camel
+- JPA
 
-Skip online checks:
+Frameworks are detected from dependency coordinates, not from project names alone.
 
-~~~bash
-python main.py /path/to/java-project --offline
-~~~
+## Compatibility
 
-Resolve Maven/Gradle transitive dependencies (optional):
+Compatibility is reported as an audit finding. Examples:
 
-~~~bash
-python main.py /path/to/java-project --resolve
-~~~
+- Spring Boot 3.x running/configured with Java below 17
+- Project Java version compared with an optional target JDK
+- Java/Spring Boot version conflicts across modules
 
-Skip external checks but allow a configured internal repository to supply Maven/Gradle dependencies:
+Example:
 
-~~~bash
-python main.py /path/to/java-project --offline --resolve --output audit-report.json
-~~~
+```bash
+python auditor.py /path/to/project --target-java 21
+```
 
-Force the build tools to use only their local caches:
+This does not calculate readiness or perform migration work.
 
-~~~bash
-python main.py /path/to/java-project --offline --build-offline --resolve --output audit-report.json
-~~~
+## Deprecated API detection
 
-Use Python 3.8+. No third-party Python packages are required. Maven or Gradle is required only for --resolve.
+The Java source scanner checks for common APIs that deserve review on newer JDKs:
 
-## Report format
+- `sun.misc.*`
+- `javax.xml.bind.*`
+- `SecurityManager`
+- `ThreadGroup`
+- `java.util.Observable` / `Observer`
 
-- summary: overall result, counts of components scanned/OK/needing review, and issue counts
-- review_items: only components with updates, known vulnerabilities, lifecycle warnings, version conflicts, unresolved versions, or incomplete checks
-- checks: whether version, vulnerability, and lifecycle checks completed
+Findings contain file, line, API, reason and source evidence.
 
-The summary says REVIEW_REQUIRED when findings exist, and its message indicates if any checks are incomplete. It says CHECK_INCOMPLETE when no findings were raised but required checks were skipped or incomplete. Components are counted as OK only when the required version, security, and applicable lifecycle checks support that conclusion.
+## Dependency and security audit
 
-Each review item gives the module, component, current version, issue types, concise reasons, and a recommended action. When a lookup fails, an issue includes available diagnostic details such as an HTTP status or network error. Healthy components are not listed individually.
+Online mode checks versioned Maven dependencies against Maven Central and OSV. The report can show:
 
-The root-level output.json is a generated report snapshot, not a live view. Regenerate it against the target Java project after changing the auditor:
+- current version
+- latest stable version
+- current → latest comparison
+- outdated/current status
+- vulnerability IDs and summaries
 
-~~~bash
-python main.py /path/to/Java_Full_Stack_Project --output output.json
-~~~
+A missing online result is reported as unavailable; it is never treated as proof that a dependency is safe.
 
-## Analysis sources
+## Lifecycle
 
-- Maven Central metadata for current stable releases in online mode
-- Project-configured Maven repository metadata for version comparisons in `--offline` mode, when HTTP(S) repository URLs are declared in a POM
-- OSV.dev for known vulnerability advisories (online mode only)
-- endoflife.date for lifecycle data where a product/release cycle is catalogued (online mode only)
-- Eclipse Adoptium for the latest LTS Java reference (online mode only)
+Java and selected framework families are checked against endoflife.date when online. EOL, unsupported/unknown, and unavailable states are kept explicit.
 
-## Limitations
+## Optional build validation
 
-- A newer release is not automatically compatible; review release notes and tests before updating.
-- Online latest-version checks use Maven Central. In `--offline` mode, latest-version metadata is queried only from HTTP(S) repositories declared in project POMs; repositories from `settings.xml` are not currently discovered by the auditor.
-- Offline mode can check dependency/Spring Boot versions against internal Maven metadata, but vulnerability and lifecycle checks remain SKIPPED unless separate internal advisory/lifecycle data sources are added.
-- Without --resolve, some transitive dependencies and remotely managed versions may not be discovered.
-- With --resolve, Maven's effective POM is also inspected to identify parent/BOM-managed dependency and plugin versions and inherited Java compiler settings when the required Maven plugins and metadata are available locally.
-- Use --offline --resolve when public advisory APIs are blocked but a Maven repository declared in the project POM is reachable. The auditor queries that repository's Maven metadata for latest versions and still skips public vulnerability/lifecycle APIs. Maven/Gradle can also use configured repositories to resolve dependencies. The internal repository URL is not included in the JSON report.
-- Use --build-offline --resolve only when no repository is reachable and all required dependencies, plugins, and parent POMs are already cached locally. This passes Maven's -o flag or Gradle's --offline option.
-- Effective-POM and dependency resolution can still fail when required plugins, parent POMs, or artifacts are unavailable from the reachable internal repository or local cache.
-- edit.txt is an XML fragment for adding repository/pluginRepository entries to a POM; the auditor does not parse edit.txt itself.
-- Gradle static parsing supports common dependency notations and version catalogs, not every custom convention.
-- No OSV match does not prove a dependency is vulnerability-free.
-- Lifecycle coverage depends on the available lifecycle dataset.
-- Maintenance/deprecation advisories are source-backed rules for known components, not a universal deprecation database.
-- --resolve executes Maven/Gradle project build configuration; use it only on trusted projects.
+```bash
+python auditor.py /path/to/project --validate-build
+```
 
-## Out of scope
+Maven/Gradle wrappers are preferred when present. Build validation is never run by default.
 
-The analyzer does not generate migration-readiness scores, migration paths, or automatic code changes.
+## Optional runtime check
+
+If an application is already running:
+
+```bash
+python auditor.py /path/to/project --runtime-url http://localhost:8080/actuator/health
+```
+
+The analyzer only checks the supplied URL; it does not start the application automatically.
+
+## Offline mode
+
+```bash
+python auditor.py /path/to/project --offline
+```
+
+Offline mode performs local analysis without external version, lifecycle or vulnerability lookups.
+
+## Scope boundary
+
+This project intentionally does not produce:
+
+- migration readiness scores
+- migration blockers
+- migration plans
+- rewrite/replace effort estimates
+- target-framework migration plans
