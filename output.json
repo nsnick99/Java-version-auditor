@@ -2,7 +2,7 @@
   "project_name": "Java_Full_Stack_Project",
   "build_system": "Maven",
   "current_java": "11",
-  "target_java": "21",
+  "minimum_java": "8",
   "modules": [
     {
       "name": "backend",
@@ -12,94 +12,14 @@
       "java_version": "11"
     }
   ],
-  "frameworks": [
-    {
-      "name": "Hibernate",
-      "version": "5.6.12.Final",
-      "versions": null,
-      "component": "org.hibernate:hibernate-core",
-      "module": "backend",
-      "source": "backend/pom.xml",
-      "latest_version": null,
-      "recommended_version": null,
-      "version_status": "NOT_VERIFIED"
-    },
-    {
-      "name": "JPA",
-      "version": "2.2.3",
-      "versions": null,
-      "component": "jakarta.persistence:jakarta.persistence-api",
-      "module": "backend",
-      "source": "backend/pom.xml",
-      "latest_version": null,
-      "recommended_version": null,
-      "version_status": "NOT_VERIFIED"
-    },
-    {
-      "name": "Spring Boot",
-      "version": "2.7.5",
-      "versions": null,
-      "component": "org.springframework.boot:spring-boot",
-      "module": "backend",
-      "source": "backend/pom.xml",
-      "latest_version": null,
-      "recommended_version": null,
-      "version_status": "NOT_VERIFIED"
-    },
-    {
-      "name": "Spring Framework",
-      "version": "5.3.23",
-      "versions": null,
-      "component": "org.springframework:spring-core",
-      "module": "backend",
-      "source": "backend/pom.xml",
-      "latest_version": null,
-      "recommended_version": null,
-      "version_status": "NOT_VERIFIED"
-    },
-    {
-      "name": "Spring MVC",
-      "version": "5.3.23",
-      "versions": null,
-      "component": "org.springframework:spring-webmvc",
-      "module": "backend",
-      "source": "backend/pom.xml",
-      "latest_version": null,
-      "recommended_version": null,
-      "version_status": "NOT_VERIFIED"
-    },
-    {
-      "name": "Spring Security",
-      "version": "5.7.4",
-      "versions": null,
-      "component": "org.springframework.security:spring-security-core",
-      "module": "backend",
-      "source": "backend/pom.xml",
-      "latest_version": null,
-      "recommended_version": null,
-      "version_status": "NOT_VERIFIED"
-    }
-  ],
-  "dependencies": [
-    {
-      "name": "antlr:antlr",
-      "version": "2.7.7",
-      "scope": "compile",
-      "type": "transitive",
-      "version_source": "resolved Maven dependency tree",
-      "module": "backend",
-      "latest_version": null,
-      "recommended_version": null,
-      "version_status": "NOT_VERIFIED"
-    },
-    {
-      "name": "ch.qos.logback:logback-classic",
-      "version": "1.2.11",
-      "scope": "compile",
-      "type": "transitive",
-      "version_source": "resolved Maven dependency tree",
-      "module": "backend",
-      "latest_version": null,
-      "recommended_version": null,
-      "version_status": "NOT_VERIFIED"
-    },
+  "frameworks": [],
+  "dependencies": [],
+  "missing_files": [],
+  "issues": [],
+  "recommendations": [],
+  "analysis_notes": [
+    "No application runtime checks or build/test validation are performed.",
+    "Latest/recommended versions use Maven Central metadata with Maven Versions Plugin fallback; a component is listed for updating only when a newer release is established.",
+    "Dependency resolution was incomplete for 1 module(s); see Issues."
+  ]
+}
