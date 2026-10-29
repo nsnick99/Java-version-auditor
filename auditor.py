@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import concurrent.futures
+from datetime import datetime
 import json
 import os
 import re
@@ -14,6 +15,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 # Java versions below this baseline are flagged as needing changes.
+AUDITOR_VERSION = "3.1"
 MINIMUM_JAVA_VERSION = "8"
 HTTP_TIMEOUT = 3
 TOOL_TIMEOUT = 60
@@ -917,6 +919,9 @@ def build_report(project_path):
     recommendations.sort(key=lambda x: (str(x.get("module")), x["component"]))
 
     return {
+        "auditor_version": AUDITOR_VERSION,
+        "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
+        "project_path": str(root),
         "project_name": root.name,
         "build_system": build_system,
         "current_java": current_java,
@@ -961,7 +966,7 @@ def main():
     except Exception as exc:
         print(f"Audit failed: {exc}", file=sys.stderr)
         raise SystemExit(1)
-    output = Path.cwd() / "output.json"
+    output = project_path.resolve() / "output.json"
     progress(f"Writing report to {output}...")
     output.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     print(f"Created {output}", flush=True)
