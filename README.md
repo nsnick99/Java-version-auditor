@@ -14,7 +14,7 @@ On Windows:
 python auditor.py "C:\Users\YourName\Desktop\Java-test"
 ```
 
-The script writes `output.json` in the current working directory. There are no optional command-line modes.
+The script writes `output.json` in the scanned Java project's root directory. The report includes `auditor_version`, `generated_at`, and `project_path` so you can verify which run produced it. There are no optional command-line modes.
 
 ## What appears in the report
 
