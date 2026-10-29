@@ -379,6 +379,67 @@ def parse_gradle_tree(output, info, root):
     return found
 
 
+def parse_versions_plugin_output(output):
+    """Parse current -> available versions from Maven Versions Plugin output."""
+    ansi = re.compile(r"\x1b\[[0-9;]*m")
+    line_pattern = re.compile(
+        r"(?P<coordinate>[A-Za-z0-9_.-]+:[A-Za-z0-9_.-]+)\s+\.{2,}\s+"
+        r"(?P<current>\S+)\s*->\s*(?P<available>.+?)\s*$"
+    )
+    updates = {}
+    for raw_line in output.splitlines():
+        line = ansi.sub("", raw_line).strip()
+        match = line_pattern.search(line)
+        if not match:
+            continue
+        group, artifact = match.group("coordinate").split(":", 1)
+        current = match.group("current").strip().rstrip(",")
+        candidates = []
+        for value in match.group("available").split(","):
+            candidate = value.strip().split()[0].rstrip(",;") if value.strip() else ""
+            if candidate and version_tuple(candidate) and not PRE_RELEASE.search(candidate):
+                candidates.append(candidate)
+        if not candidates:
+            continue
+        versions = sorted(set([current] + candidates), key=version_sort_key)
+        key = (group, artifact)
+        if key in updates:
+            versions = sorted(set(versions + updates[key]["versions"]), key=version_sort_key)
+        updates[key] = {
+            "status": "FOUND",
+            "versions": versions,
+            "latest_version": versions[-1],
+            "source": "Maven Versions Plugin",
+        }
+    return updates
+
+
+def resolve_maven_updates(info, root):
+    """Use Maven's Versions Plugin as a fallback for release-version lookup."""
+    launcher = executable_or_wrapper(root, "mvn", info["path"].parent)
+    if not launcher:
+        return {}, "Maven executable or wrapper not found for version lookup"
+
+    plugin_version = "2.21.0"
+    command = launcher + [
+        "-B", "-f", str(info["path"].resolve()),
+        "-Dstyle.color=never",
+        "-Dversions.showNewestPerSegment=true",
+        "-DshowVersionless=true",
+        "-Dverbose=false",
+        f"org.codehaus.mojo:versions-maven-plugin:{plugin_version}:display-dependency-updates",
+        f"org.codehaus.mojo:versions-maven-plugin:{plugin_version}:display-parent-updates",
+    ]
+    code, stdout, stderr = run_command(command, root, TOOL_TIMEOUT)
+    parsed = parse_versions_plugin_output((stdout or "") + "\n" + (stderr or ""))
+    if parsed:
+        return parsed, None
+    if code == 0:
+        return {}, None
+    lines = (stderr.strip() or stdout.strip() or f"Maven Versions Plugin exited with code {code}").splitlines()
+    return {}, lines[-1][:220] if lines else "Maven Versions Plugin could not check newer versions"
+
+
 def resolve_dependency_tree(info, root):
     system = info.get("build_system")
     if system == "Maven":
@@ -642,11 +703,18 @@ def build_report(project_path):
     module_details = []
     all_dependencies = []
     resolution_notes = []
+    maven_update_records = []
     for info in module_infos:
         if info.get("is_aggregator") and not info["direct_dependencies"]:
             tree, resolution_error = [], None
         else:
             tree, resolution_error = resolve_dependency_tree(info, root)
+        if info.get("build_system") == "Maven" and not (info.get("is_aggregator") and not info["direct_dependencies"]):
+            update_data, update_error = resolve_maven_updates(info, root)
+            if update_data:
+                maven_update_records.append(update_data)
+            elif update_error:
+                resolution_notes.append({"module": rel(info["path"].parent, root), "message": update_error})
         if resolution_error:
             resolution_notes.append({"module": rel(info["path"].parent, root), "message": resolution_error})
             issues.append({
@@ -685,6 +753,21 @@ def build_report(project_path):
     metadata_coordinates = {(d["group_id"], d["artifact_id"]) for d in all_dependencies if d.get("version")}
     metadata_coordinates.add(("org.springframework.boot", "spring-boot-starter-parent"))
     metadata_cache = fetch_metadata_for(metadata_coordinates)
+
+    # Merge Maven's repository-aware update candidates when direct Python HTTP lookups fail.
+    for update_data in maven_update_records:
+        for coordinate, candidate_data in update_data.items():
+            existing = metadata_cache.get(coordinate, {"versions": [], "status": "UNAVAILABLE"})
+            combined = set(existing.get("versions", []) or [])
+            combined.update(candidate_data.get("versions", []) or [])
+            combined = sorted((v for v in combined if version_tuple(v)), key=version_sort_key)
+            if combined:
+                metadata_cache[coordinate] = {
+                    "status": "FOUND",
+                    "versions": combined,
+                    "latest_version": combined[-1],
+                    "source": candidate_data.get("source") or existing.get("source"),
+                }
 
     dependencies = []
     for dep in all_dependencies:
