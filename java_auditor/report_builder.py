@@ -9,7 +9,7 @@ from .build_files import read_ant, read_gradle, read_pom
 from .config import AUDITOR_VERSION, BUILD_NAMES, MINIMUM_JAVA_VERSION, SETTINGS_NAMES
 from .dependency_resolver import merge_dependencies, resolve_dependency_tree, resolve_maven_updates
 from .project_scanner import detect_missing_gradle_modules, scan_deprecated_apis
-from .utils import find_files, java_major, progress, rel, version_tuple
+from .utils import find_files, java_major, progress, rel, version_sort_key, version_tuple
 from .version_checker import fetch_metadata_for, identify_frameworks, version_advice
 
 def choose_java(info):
