@@ -391,7 +391,9 @@ def resolve_dependency_tree(info, root):
             lines = (stderr.strip() or stdout.strip() or f"Maven exited with code {code}").splitlines()
             return [], lines[-1][:220] if lines else "Maven dependency tree could not be resolved"
         result = parse_maven_tree(stdout, info, root)
-        return (result, None) if result else ([], "Maven ran, but no dependency coordinates were parsed")
+        if result or not info["direct_dependencies"]:
+            return result, None
+        return [], "Maven ran, but no dependency coordinates were parsed"
     if system == "Gradle":
         launcher = executable_or_wrapper(root, "gradle", info["path"].parent)
         if not launcher:
@@ -402,7 +404,9 @@ def resolve_dependency_tree(info, root):
             lines = (stderr.strip() or stdout.strip() or f"Gradle exited with code {code}").splitlines()
             return [], lines[-1][:220] if lines else "Gradle dependency report could not be resolved"
         result = parse_gradle_tree(stdout, info, root)
-        return (result, None) if result else ([], "Gradle ran, but no resolved dependency coordinates were parsed")
+        if result or not info["direct_dependencies"]:
+            return result, None
+        return [], "Gradle ran, but no resolved dependency coordinates were parsed"
     return [], "Ant dependency resolution is not supported"
 
 
@@ -756,6 +760,31 @@ def build_report(project_path):
                     "current_version": current, "recommended_version": recommended,
                     "reason": "Framework update identified from Maven Central metadata; verify Java requirements and release notes.",
                 })
+
+    # Recommend a Java compiler target update without attempting a build.
+    for module in module_details:
+        current = module.get("java_version")
+        if current in {"Not detected", "Multiple"} or not java_major(current):
+            continue
+        current_num = int(java_major(current))
+        if current_num >= target_major:
+            continue
+        recommended_java = "8" if current_num < 8 else TARGET_JAVA_VERSION
+        key = (module.get("path"), "Java compiler target", current, recommended_java)
+        if key not in recommendation_keys:
+            recommendation_keys.add(key)
+            reason = (
+                f"Java {current} is an old source level. Move to Java 8 compatibility first, then address compatibility before targeting Java {TARGET_JAVA_VERSION}."
+                if current_num < 8 else
+                f"The configured compiler target is Java {current}; align it with target Java {TARGET_JAVA_VERSION} after checking source and dependency compatibility."
+            )
+            recommendations.append({
+                "component": "Java compiler target",
+                "module": module.get("path"),
+                "current_version": current,
+                "recommended_version": recommended_java,
+                "reason": reason,
+            })
 
     severity_rank = {"HIGH": 0, "MEDIUM": 1, "LOW": 2}
     issues.sort(key=lambda x: (severity_rank.get(x.get("severity"), 3), x.get("title", ""), x.get("path") or ""))
