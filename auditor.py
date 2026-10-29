@@ -836,7 +836,7 @@ def build_report(project_path):
             key = (item.get("module"), name, current, recommended)
             if key not in recommendation_keys:
                 recommendation_keys.add(key)
-                reason = "Newer stable release found in the current major version line." if status == "OUTDATED" else "A newer major version is available; review release notes and compatibility before upgrading."
+                reason = "A newer stable release is available in the current major line." if status == "NEEDS_UPDATE" else "A newer major version is available; review release notes and Java compatibility before upgrading."
                 recommendations.append({"component": name, "module": item.get("module"), "current_version": current, "recommended_version": recommended, "reason": reason})
 
     for item in frameworks:
