@@ -493,7 +493,8 @@ def merge_dependencies(info, tree_deps):
     resolved_coordinates = set()
     for dep in tree_deps:
         item = dict(dep)
-        coordinate = (dep["group_id"], dep["artifact_id"])        resolved_coordinates.add(coordinate)
+        coordinate = (dep["group_id"], dep["artifact_id"])
+        resolved_coordinates.add(coordinate)
         declaration = direct.get(coordinate)
         if declaration:
             item["direct"] = True
@@ -737,7 +738,8 @@ def build_report(project_path):
                 "message": resolution_error + ". Declared versions are retained; inherited/transitive versions may be missing.",
             })
         merged = merge_dependencies(info, tree)
-        for dep in merged:            if not dep.get("version"):
+        for dep in merged:
+            if not dep.get("version"):
                 issues.append({
                     "title": "Dependency version unresolved",
                     "severity": "MEDIUM",
