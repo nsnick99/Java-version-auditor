@@ -238,7 +238,6 @@ def read_gradle(build_file, root):
     text = build_file.read_text(encoding="utf-8", errors="replace")
     module = rel(build_file.parent, root)
     info = {"path": build_file, "java_versions": [], "boot_versions": [], "direct_dependencies": [], "project_coordinates": None, "missing_files": [], "error": None}
-
     patterns = (
         r"(?:sourceCompatibility|targetCompatibility)\s*[=:]\s*['\"]?(?:JavaVersion\.)?VERSION_(?:1_)?(\d+)",
         r"(?:sourceCompatibility|targetCompatibility)\s*[=:]\s*['\"]?(1\.\d+|\d+)",
@@ -288,8 +287,25 @@ def read_ant(build_file, root):
     return info
 
 
+def progress(message):
+    """Print a flushed progress message so long scans do not look frozen."""
+    print(f"[Java Version Auditor] {message}", flush=True)
+
+
+def iter_project_files(root):
+    """Walk project files while pruning generated/vendor directories from traversal."""
+    for current, dirnames, filenames in os.walk(root):
+        dirnames[:] = [name for name in dirnames if name not in SKIP_DIRS]
+        current_path = Path(current)
+        for filename in filenames:
+            yield current_path / filename
+
+
 def find_files(root, names):
-    return sorted((p for p in root.rglob("*") if p.is_file() and p.name in names and not should_skip(p, root)), key=lambda p: str(p).lower())
+    return sorted(
+        (p for p in iter_project_files(root) if p.is_file() and p.name in names),
+        key=lambda p: str(p).lower(),
+    )
 
 
 def executable_or_wrapper(root, system, parent=None):
@@ -477,8 +493,7 @@ def merge_dependencies(info, tree_deps):
     resolved_coordinates = set()
     for dep in tree_deps:
         item = dict(dep)
-        coordinate = (dep["group_id"], dep["artifact_id"])
-        resolved_coordinates.add(coordinate)
+        coordinate = (dep["group_id"], dep["artifact_id"])        resolved_coordinates.add(coordinate)
         declaration = direct.get(coordinate)
         if declaration:
             item["direct"] = True
@@ -633,8 +648,8 @@ def detect_missing_gradle_modules(settings_files, root):
 
 def scan_deprecated_apis(root):
     findings = []
-    for path in root.rglob("*.java"):
-        if should_skip(path, root):
+    for path in iter_project_files(root):
+        if path.suffix.lower() != ".java":
             continue
         try:
             lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
@@ -660,8 +675,11 @@ def build_report(project_path):
     if not root.exists() or not root.is_dir():
         raise ValueError(f"Project path must be an existing directory: {root}")
 
+    progress(f"Scanning project: {root}")
+    progress("Discovering build files and modules...")
     build_files = find_files(root, BUILD_NAMES)
     settings_files = find_files(root, SETTINGS_NAMES)
+    progress(f"Found {len(build_files)} build files and {len(settings_files)} Gradle settings files.")
     systems = sorted({
         "Maven" if p.name == "pom.xml" else "Gradle" if p.name.startswith(("build.gradle", "build.gradle.kts")) else "Ant"
         for p in build_files
@@ -697,12 +715,14 @@ def build_report(project_path):
     all_dependencies = []
     resolution_notes = []
     maven_update_records = []
-    for info in module_infos:
+    for module_index, info in enumerate(module_infos, 1):
+        progress(f"[{module_index}/{len(module_infos)}] Resolving dependencies for {rel(info['path'], root)} ({info.get('build_system')})...")
         if info.get("is_aggregator") and not info["direct_dependencies"]:
             tree, resolution_error = [], None
         else:
             tree, resolution_error = resolve_dependency_tree(info, root)
         if info.get("build_system") == "Maven" and not (info.get("is_aggregator") and not info["direct_dependencies"]):
+            progress(f"[{module_index}/{len(module_infos)}] Checking Maven dependency and parent updates...")
             update_data, update_error = resolve_maven_updates(info, root)
             if update_data:
                 maven_update_records.append(update_data)
@@ -717,8 +737,7 @@ def build_report(project_path):
                 "message": resolution_error + ". Declared versions are retained; inherited/transitive versions may be missing.",
             })
         merged = merge_dependencies(info, tree)
-        for dep in merged:
-            if not dep.get("version"):
+        for dep in merged:            if not dep.get("version"):
                 issues.append({
                     "title": "Dependency version unresolved",
                     "severity": "MEDIUM",
@@ -745,7 +764,9 @@ def build_report(project_path):
 
     metadata_coordinates = {(d["group_id"], d["artifact_id"]) for d in all_dependencies if d.get("version")}
     metadata_coordinates.add(("org.springframework.boot", "spring-boot-starter-parent"))
+    progress(f"Checking latest-version metadata for {len(metadata_coordinates)} dependency coordinates...")
     metadata_cache = fetch_metadata_for(metadata_coordinates)
+    progress("Version metadata lookup finished.")
 
     # Merge Maven's repository-aware update candidates when direct Python HTTP lookups fail.
     for update_data in maven_update_records:
@@ -823,6 +844,7 @@ def build_report(project_path):
         if item.get("version_status") in {"NEEDS_UPDATE", "MAJOR_UPDATE_AVAILABLE", "NEEDS_CHANGES"}
     ]
 
+    progress("Scanning Java source for selected deprecated API patterns...")
     issues.extend(scan_deprecated_apis(root))
     for item in missing_files:
         issues.append({"title": "Missing referenced file or project", "severity": "HIGH", "path": item["path"], "message": item["reason"]})
@@ -922,13 +944,16 @@ def main():
         print('Usage: python auditor.py "PATH_TO_JAVA_PROJECT"')
         raise SystemExit(2)
     try:
-        report = build_report(Path(sys.argv[1]).expanduser())
+        project_path = Path(sys.argv[1]).expanduser()
+        progress(f"Starting audit for {project_path}")
+        report = build_report(project_path)
     except Exception as exc:
         print(f"Audit failed: {exc}", file=sys.stderr)
         raise SystemExit(1)
     output = Path.cwd() / "output.json"
+    progress(f"Writing report to {output}...")
     output.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    print(f"Created {output}")
+    print(f"Created {output}", flush=True)
 
 
 if __name__ == "__main__":
