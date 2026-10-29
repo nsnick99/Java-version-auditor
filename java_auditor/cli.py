@@ -20,7 +20,8 @@ def main():
     except Exception as exc:
         print(f"Audit failed: {exc}", file=sys.stderr)
         raise SystemExit(1)
-    output = project_path.resolve() / "output.json"
+    # Always save the report beside the auditor entry point, not in the scanned project.
+    output = Path(__file__).resolve().parents[1] / "output.json"
     progress(f"Writing report to {output}...")
     output.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     print(f"Created {output}", flush=True)
