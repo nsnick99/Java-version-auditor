@@ -602,16 +602,9 @@ def identify_frameworks(deps, info, metadata_cache, root):
             lookup = tuple(selected["component"].split(":", 1))
         metadata = metadata_cache.get(lookup, {"versions": [], "status": "SKIPPED"})
         advice = version_advice(selected["version"], metadata)
-        current_major = version_tuple(selected["version"])[0] if version_tuple(selected["version"]) else None
-        if name == "Spring Boot" and current_major is not None and current_major < 2 and int(TARGET_JAVA_VERSION) >= 17:
-            boot2_versions = [v for v in metadata.get("versions", []) if version_tuple(v) and version_tuple(v)[0] == 2]
-            if boot2_versions:
-                advice["recommended_version"] = boot2_versions[-1]
-                advice["version_status"] = "OUTDATED"
         result.append({
             "name": name,
             "version": distinct[0] if len(distinct) == 1 else "Multiple",
-            "versions": distinct if len(distinct) > 1 else None,
             "component": selected["component"],
             "module": selected.get("module") or rel(info["path"].parent, root),
             "source": selected.get("source"),
@@ -793,43 +786,42 @@ def build_report(project_path):
     current_java = "Multiple" if any(m["java_version"] == "Multiple" for m in module_details) or len(set(java_versions)) > 1 else (java_versions[0] if java_versions else "Not detected")
     build_system = systems[0] if len(systems) == 1 else ("Multiple" if systems else "Unknown")
 
-    target_major = int(TARGET_JAVA_VERSION)
+    minimum_java = int(MINIMUM_JAVA_VERSION)
     for module in module_details:
         current = module["java_version"]
-        if current not in {"Not detected", "Multiple"} and java_major(current) and int(java_major(current)) < target_major:
-            severity = "HIGH" if int(java_major(current)) < 8 else "MEDIUM"
+        detected = java_major(current) if current not in {"Not detected", "Multiple"} else None
+        if detected and int(detected) < minimum_java:
             issues.append({
-                "title": "Java compiler target is older than the selected target",
-                "severity": severity,
+                "title": "Java version below JDK 8 baseline",
+                "severity": "HIGH",
+                "status": "NEEDS_CHANGES",
                 "path": module["build_file"],
-                "message": f"The module is configured for Java {current}, while the report target is Java {TARGET_JAVA_VERSION}. Align the compiler/toolchain only after checking code and dependency compatibility.",
+                "current_version": detected,
+                "recommended_version": MINIMUM_JAVA_VERSION,
+                "message": f"Java {detected} is below the minimum JDK {MINIMUM_JAVA_VERSION} baseline. Upgrade the compiler/source target and verify APIs and dependencies.",
             })
 
+    java_by_module = {m["path"]: java_major(m["java_version"]) for m in module_details}
     for framework in frameworks:
         if framework["name"] != "Spring Boot" or not version_tuple(framework.get("version")):
             continue
-        boot_major = version_tuple(framework["version"])[0]
-        if boot_major < 2 and target_major >= 17:
+        java_version = java_by_module.get(framework.get("module"))
+        if version_tuple(framework["version"])[0] >= 3 and java_version and int(java_version) < 17:
+            framework["version_status"] = "NEEDS_CHANGES"
+            framework["change_reason"] = f"Spring Boot {framework['version']} requires Java 17 or newer, but this module targets Java {java_version}."
             issues.append({
-                "title": "Legacy Spring Boot version",
+                "title": "Java version incompatible with Spring Boot",
                 "severity": "HIGH",
+                "status": "NEEDS_CHANGES",
                 "path": framework.get("source"),
-                "message": f"Spring Boot {framework['version']} is not recommended for the configured Java {TARGET_JAVA_VERSION} target. The report recommends the latest available 2.x maintenance version where found.",
+                "message": framework["change_reason"],
             })
-        elif boot_major == 2 and target_major >= 17:
-            issues.append({
-                "title": "Older Spring Boot major line",
-                "severity": "LOW",
-                "path": framework.get("source"),
-                "message": f"Spring Boot {framework['version']} is from the 2.x line. Update to the latest 2.x maintenance version for a conservative update; newer major lines require compatibility review.",
-            })
-        elif boot_major >= 3 and target_major < 17:
-            issues.append({
-                "title": "Java target incompatible with Spring Boot",
-                "severity": "HIGH",
-                "path": framework.get("source"),
-                "message": f"Spring Boot {framework['version']} requires Java 17 or newer, but the configured target is Java {TARGET_JAVA_VERSION}.",
-            })
+
+    # Only show frameworks with a confirmed update or a known compatibility change.
+    frameworks = [
+        item for item in frameworks
+        if item.get("version_status") in {"NEEDS_UPDATE", "MAJOR_UPDATE_AVAILABLE", "NEEDS_CHANGES"}
+    ]
 
     issues.extend(scan_deprecated_apis(root))
     for item in missing_files:
@@ -839,7 +831,7 @@ def build_report(project_path):
     recommendation_keys = set()
     for item in dependencies:
         current, recommended, status = item.get("version"), item.get("recommended_version"), item.get("version_status")
-        if status in {"OUTDATED", "NEWER_MAJOR_AVAILABLE"} and current and recommended and recommended != current:
+        if status in {"NEEDS_UPDATE", "MAJOR_UPDATE_AVAILABLE"} and current and recommended and recommended != current:
             name = f"{item['group_id']}:{item['artifact_id']}"
             key = (item.get("module"), name, current, recommended)
             if key not in recommendation_keys:
@@ -849,7 +841,7 @@ def build_report(project_path):
 
     for item in frameworks:
         current, recommended = item.get("version"), item.get("recommended_version")
-        if current and recommended and recommended != current and item.get("version_status") in {"OUTDATED", "NEWER_MAJOR_AVAILABLE"}:
+        if current and recommended and recommended != current and item.get("version_status") in {"NEEDS_UPDATE", "MAJOR_UPDATE_AVAILABLE"}:
             key = (item.get("module"), item["name"], current, recommended)
             if key not in recommendation_keys:
                 recommendation_keys.add(key)
@@ -859,29 +851,17 @@ def build_report(project_path):
                     "reason": "Framework update identified from Maven Central metadata; verify Java requirements and release notes.",
                 })
 
-    # Recommend a Java compiler target update without attempting a build.
     for module in module_details:
         current = module.get("java_version")
-        if current in {"Not detected", "Multiple"} or not java_major(current):
-            continue
-        current_num = int(java_major(current))
-        if current_num >= target_major:
-            continue
-        recommended_java = "8" if current_num < 8 else TARGET_JAVA_VERSION
-        key = (module.get("path"), "Java compiler target", current, recommended_java)
-        if key not in recommendation_keys:
-            recommendation_keys.add(key)
-            reason = (
-                f"Java {current} is an old source level. Move to Java 8 compatibility first, then address compatibility before targeting Java {TARGET_JAVA_VERSION}."
-                if current_num < 8 else
-                f"The configured compiler target is Java {current}; align it with target Java {TARGET_JAVA_VERSION} after checking source and dependency compatibility."
-            )
+        detected = java_major(current) if current not in {"Not detected", "Multiple"} else None
+        if detected and int(detected) < int(MINIMUM_JAVA_VERSION):
             recommendations.append({
-                "component": "Java compiler target",
+                "component": "Java",
                 "module": module.get("path"),
-                "current_version": current,
-                "recommended_version": recommended_java,
-                "reason": reason,
+                "current_version": detected,
+                "recommended_version": MINIMUM_JAVA_VERSION,
+                "version_status": "NEEDS_CHANGES",
+                "reason": f"Java versions below JDK {MINIMUM_JAVA_VERSION} should be upgraded and compatibility changes reviewed.",
             })
 
     severity_rank = {"HIGH": 0, "MEDIUM": 1, "LOW": 2}
@@ -892,7 +872,7 @@ def build_report(project_path):
         "project_name": root.name,
         "build_system": build_system,
         "current_java": current_java,
-        "target_java": TARGET_JAVA_VERSION,
+        "minimum_java": MINIMUM_JAVA_VERSION,
         "modules": module_details,
         "frameworks": frameworks,
         "dependencies": [
@@ -903,11 +883,14 @@ def build_report(project_path):
                 "type": "direct" if d.get("direct") else "transitive",
                 "version_source": d.get("version_source"),
                 "module": d.get("module"),
-                "latest_version": d.get("latest_version"),
-                "recommended_version": d.get("recommended_version"),
-                "version_status": d.get("version_status"),
+                "latest_version": d.get("latest_version") or "Unavailable",
+                "recommended_version": d.get("recommended_version") or "Unavailable",
+                "version_status": d.get("version_status") or "CHECK_UNAVAILABLE",
             }
-            for d in sorted(dependencies, key=lambda x: (str(x.get("module")), x["group_id"], x["artifact_id"], str(x.get("version"))))
+            for d in sorted(
+                [d for d in dependencies if d.get("version_status") in {"NEEDS_UPDATE", "MAJOR_UPDATE_AVAILABLE"}],
+                key=lambda x: (str(x.get("module")), x["group_id"], x["artifact_id"], str(x.get("version")))
+            )
         ],
         "missing_files": missing_files,
         "issues": issues,
