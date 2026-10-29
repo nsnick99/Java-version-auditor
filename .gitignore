@@ -3,4 +3,5 @@ __pycache__/
 .venv/
 venv/
 audit-report.json
+output.json
 .DS_Store
