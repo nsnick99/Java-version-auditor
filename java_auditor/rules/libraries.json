@@ -1,0 +1,18 @@
+{
+  "description": "Known libraries and migration guidance",
+  "libraries": [
+    {"groupId":"org.springframework","artifactIds":["spring-core","spring-context","spring-web","spring-webmvc","spring-beans"],"minSupportedMajor":6,"recommendedVersion":"6.1.x","note":"Spring 6 requires Java 17+ and the jakarta.* namespace","jakarta":true},
+    {"groupId":"org.springframework.boot","artifactIds":["spring-boot","spring-boot-starter","spring-boot-autoconfigure"],"minSupportedMajor":3,"recommendedVersion":"3.3.x","note":"Spring Boot 3 requires Java 17+ and Jakarta EE 9+","jakarta":true},
+    {"groupId":"org.hibernate","artifactIds":["hibernate-core"],"minSupportedMajor":6,"recommendedVersion":"6.4.x","note":"Hibernate 6 uses jakarta.persistence","jakarta":true},
+    {"groupId":"com.fasterxml.jackson.core","artifactIds":["jackson-databind","jackson-core","jackson-annotations"],"minSupportedMajor":2,"minSupportedMinor":15,"recommendedVersion":"2.17.x","note":"Use a current supported Jackson 2.x release"},
+    {"groupId":"org.apache.logging.log4j","artifactIds":["log4j-core","log4j-api"],"minSupportedMajor":2,"minSupportedMinor":17,"recommendedVersion":"2.23.x","note":"Use a current supported Log4j 2.x release"},
+    {"groupId":"junit","artifactIds":["junit"],"eol":true,"recommendedVersion":"org.junit.jupiter:junit-jupiter 5.10.x","note":"Migrate from JUnit 4 to JUnit 5 (Jupiter)"},
+    {"groupId":"org.apache.tomcat","artifactIds":["tomcat-embed-core"],"minSupportedMajor":10,"recommendedVersion":"10.1.x","note":"Tomcat 10+ uses the jakarta.servlet namespace","jakarta":true}
+  ],
+  "eolArtifacts": [
+    {"groupId":"log4j","artifactId":"log4j","note":"Log4j 1.x is end-of-life; use Log4j 2.x or Logback"},
+    {"groupId":"commons-httpclient","artifactId":"commons-httpclient","note":"Retired; use Apache HttpClient 5 or java.net.http"},
+    {"groupId":"org.apache.struts","artifactId":"struts2-core","note":"Upgrade older Struts releases to a supported 6.x release"},
+    {"groupId":"javax.servlet","artifactId":"servlet-api","note":"Legacy servlet API; move to jakarta.servlet-api"}
+  ]
+}
