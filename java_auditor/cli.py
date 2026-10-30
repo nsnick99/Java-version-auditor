@@ -81,7 +81,7 @@ def _configure_runtime(deep, offline, project_path):
         version_checker.maven_metadata = lambda group, artifact: maven_metadata(group, artifact, internal_url)
         progress(f"Maven metadata source: internal repository {internal_url}")
     elif internal_url and offline:
-        progress(f"Maven metadata source: internal repository configured, offline mode enabled")
+        progress("Maven metadata source: internal repository configured, offline mode enabled")
 
     if offline:
         if internal_url:
@@ -104,6 +104,12 @@ def _internal_fetch(version_checker, internal_url):
                 cache[(group, artifact)] = {"status": "UNAVAILABLE", "versions": []}
         return cache
     return fetch
+
+
+def _write_json(path, data):
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    temporary.replace(path)
 
 
 def main():
@@ -136,9 +142,16 @@ def main():
         print(f"Audit failed: {exc}", file=sys.stderr)
         raise SystemExit(1)
 
-    output = Path(__file__).resolve().parents[1] / "output.json"
-    progress(f"Writing report to {output}...")
-    temporary = output.with_suffix(".json.tmp")
-    temporary.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    temporary.replace(output)
+    output_dir = Path(__file__).resolve().parents[1]
+    output = output_dir / "output.json"
+    progress(f"Writing full report to {output}...")
+    _write_json(output, report)
+
+    from .critical_report import build_critical_report
+    critical_output = output_dir / "critical_updates.json"
+    critical_report = build_critical_report(report)
+    progress(f"Writing critical report to {critical_output}...")
+    _write_json(critical_output, critical_report)
+
     print(f"Created {output}", flush=True)
+    print(f"Created {critical_output}", flush=True)
