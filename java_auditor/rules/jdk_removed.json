@@ -1,0 +1,19 @@
+{
+  "description": "JDK APIs removed or deprecated-for-removal",
+  "rules": [
+    {"id":"JDK-JAXB","category":"JDK_REMOVED","severity":"HIGH","removedIn":11,"prefixes":["javax/xml/bind/"],"replacement":"jakarta.xml.bind:jakarta.xml.bind-api + org.glassfish.jaxb:jaxb-runtime"},
+    {"id":"JDK-JAXWS","category":"JDK_REMOVED","severity":"HIGH","removedIn":11,"prefixes":["javax/xml/ws/","javax/jws/"],"replacement":"jakarta.xml.ws:jakarta.xml.ws-api + com.sun.xml.ws:jaxws-rt"},
+    {"id":"JDK-ACTIVATION","category":"JDK_REMOVED","severity":"MEDIUM","removedIn":11,"prefixes":["javax/activation/"],"replacement":"jakarta.activation:jakarta.activation-api"},
+    {"id":"JDK-ANNOTATION","category":"JDK_REMOVED","severity":"MEDIUM","removedIn":11,"prefixes":["javax/annotation/Generated","javax/annotation/PostConstruct","javax/annotation/PreDestroy","javax/annotation/Resource"],"replacement":"jakarta.annotation:jakarta.annotation-api"},
+    {"id":"JDK-CORBA","category":"JDK_REMOVED","severity":"HIGH","removedIn":11,"prefixes":["javax/rmi/CORBA/","org/omg/CORBA/","org/omg/CosNaming/"],"replacement":"Third-party CORBA implementation or redesign"},
+    {"id":"JDK-NASHORN","category":"JDK_REMOVED","severity":"MEDIUM","removedIn":15,"prefixes":["jdk/nashorn/","javax/script/ScriptEngineManager"],"replacement":"GraalVM JS or org.openjdk.nashorn:nashorn-core"},
+    {"id":"JDK-SECURITY-MANAGER","category":"JDK_DEPRECATED_FOR_REMOVAL","severity":"MEDIUM","deprecatedIn":17,"prefixes":["java/lang/SecurityManager","java/security/AccessController"],"replacement":"Remove reliance on SecurityManager; use OS or container isolation"},
+    {"id":"JDK-THREAD-STOP","category":"JDK_DEPRECATED_FOR_REMOVAL","severity":"MEDIUM","deprecatedIn":1,"members":["java/lang/Thread.stop","java/lang/Thread.suspend","java/lang/Thread.resume"],"replacement":"Cooperative interruption via Thread.interrupt()"},
+    {"id":"JDK-FINALIZE","category":"JDK_DEPRECATED_FOR_REMOVAL","severity":"LOW","deprecatedIn":18,"members":["java/lang/Object.finalize","java/lang/Runtime.runFinalization"],"replacement":"try-with-resources, java.lang.ref.Cleaner"},
+    {"id":"JDK-NEW-WRAPPER","category":"JDK_DEPRECATED_FOR_REMOVAL","severity":"LOW","deprecatedIn":9,"members":["java/lang/Integer.<init>","java/lang/Long.<init>","java/lang/Double.<init>","java/lang/Boolean.<init>","java/lang/Character.<init>","java/lang/Short.<init>","java/lang/Byte.<init>","java/lang/Float.<init>"],"replacement":"Use valueOf(...) factory methods"}
+  ],
+  "internalPrefixes": [
+    {"id":"INT-UNSAFE","severity":"BLOCKER","prefixes":["sun/misc/Unsafe"],"suggestedAlternative":"VarHandle / MethodHandles / java.lang.foreign"},
+    {"id":"INT-SUN","severity":"HIGH","prefixes":["sun/","com/sun/tools/","com/sun/org/apache/","com/sun/image/"],"suggestedAlternative":"Use supported public APIs; run jdeps --jdk-internals"}
+  ]
+}
