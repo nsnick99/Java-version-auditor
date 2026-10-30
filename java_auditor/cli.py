@@ -6,17 +6,29 @@ import json
 import sys
 from pathlib import Path
 
-from .report_builder import build_report
+from .config import ARTIFACT_EXTENSIONS, TARGET_JAVA
 from .utils import progress
 
+USAGE = 'Usage: python auditor.py "PATH_TO_JAVA_PROJECT_OR_WAR/JAR/EAR" [--target-java N]'
+
+
 def main():
-    if len(sys.argv) != 2:
-        print('Usage: python auditor.py "PATH_TO_JAVA_PROJECT"')
+    args = sys.argv[1:]
+    target = TARGET_JAVA
+    if len(args) == 3 and args[1] == "--target-java" and args[2].isdigit():
+        target, args = int(args[2]), args[:1]
+    if len(args) != 1:
+        print(USAGE)
         raise SystemExit(2)
     try:
-        project_path = Path(sys.argv[1]).expanduser()
-        progress(f"Starting audit for {project_path}")
-        report = build_report(project_path)
+        path = Path(args[0]).expanduser()
+        progress(f"Starting audit for {path} (target Java {target})")
+        if path.is_file() and path.suffix.lower() in ARTIFACT_EXTENSIONS:
+            from .artifact_report import build_artifact_report
+            report = build_artifact_report(path, target)
+        else:
+            from .report_builder import build_report
+            report = build_report(path, target)
     except Exception as exc:
         print(f"Audit failed: {exc}", file=sys.stderr)
         raise SystemExit(1)
