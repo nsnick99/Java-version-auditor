@@ -5,9 +5,6 @@ from __future__ import annotations
 from datetime import datetime
 
 
-# These components can require source/configuration changes when moving across
-# major generations. Merely having a newer version available is not enough to
-# put a dependency into the critical report.
 CRITICAL_COORDINATES = {
     "io.jsonwebtoken:jjwt",
     "jakarta.persistence:jakarta.persistence-api",
@@ -44,6 +41,63 @@ def _dependency_action(dep):
     return "Review compatibility before upgrading; do not blindly select the newest major version."
 
 
+def _migration_action(item, category):
+    """Convert a critical finding into a concrete migration task."""
+    if category == "java":
+        return {
+            "id": "JAVA-TARGET",
+            "category": "java",
+            "component": "Java",
+            "severity": item["severity"],
+            "current_version": item.get("current_version"),
+            "target_version": item.get("target_version"),
+            "build_failure_risk": item.get("build_failure_risk", True),
+            "source_changes_required": item.get("source_changes_required", False),
+            "action": item["action"],
+        }
+
+    if category == "dependency":
+        return {
+            "id": f"DEPENDENCY-{item['name']}",
+            "category": "dependency",
+            "component": item["name"],
+            "severity": item["severity"],
+            "current_version": item.get("current_version"),
+            "target_version": item.get("recommended_version"),
+            "build_failure_risk": item.get("build_failure_risk", False),
+            "source_changes_required": item.get("source_changes_required", False),
+            "action": item["action"],
+        }
+
+    if category == "framework":
+        return {
+            "id": f"FRAMEWORK-{item['name'].upper().replace(' ', '-')}",
+            "category": "framework",
+            "component": item["name"],
+            "severity": item["severity"],
+            "current_version": item.get("current_version"),
+            "target_version": item.get("recommended_version"),
+            "build_failure_risk": item.get("build_failure_risk", True),
+            "source_changes_required": item.get("source_changes_required", True),
+            "action": item["action"],
+        }
+
+    if category == "api":
+        rule_id = item.get("rule_id") or "UNKNOWN"
+        return {
+            "id": f"API-{rule_id}",
+            "category": "api",
+            "component": rule_id,
+            "severity": item["severity"],
+            "build_failure_risk": True,
+            "source_changes_required": True,
+            "path": item.get("path"),
+            "action": item["action"],
+        }
+
+    return None
+
+
 def build_critical_report(report):
     """Return only actionable build/migration risks from a full report."""
     target_java = str(report.get("target_java", ""))
@@ -55,8 +109,6 @@ def build_critical_report(report):
     framework_migrations = []
     api_findings = []
 
-    # Java target is actionable whenever the detected project Java differs from
-    # the requested migration target.
     if target_java and current_java not in {"", "Not detected", "Multiple", target_java}:
         build_blockers.append({
             "component": "Java",
@@ -68,7 +120,6 @@ def build_critical_report(report):
             "action": f"Update Maven/Gradle compiler configuration to Java {target_java} and verify JDK API compatibility.",
         })
 
-    # Preserve only genuinely high-severity/blocking issues from the full scan.
     for issue in report.get("issues", []):
         if issue.get("severity") not in {"HIGH", "BLOCKER"}:
             continue
@@ -80,7 +131,6 @@ def build_critical_report(report):
             "action": issue.get("message"),
         })
 
-    # API findings are more useful than a blanket list of outdated libraries.
     for category, findings in report.get("api_findings", {}).items():
         for finding in findings or []:
             if finding.get("severity") not in {"BLOCKER", "HIGH"}:
@@ -94,7 +144,6 @@ def build_critical_report(report):
                 "action": finding.get("action") or "Update the affected API usage and re-run the audit.",
             })
 
-    # Only dependencies with known migration significance are retained.
     for dep in report.get("dependencies", []):
         name = dep.get("name", "")
         if name not in CRITICAL_COORDINATES:
@@ -113,8 +162,6 @@ def build_critical_report(report):
             "action": _dependency_action(dep),
         })
 
-    # Frameworks are included only when their version is actually outdated or
-    # requires changes; routine patch updates are intentionally omitted.
     for framework in report.get("frameworks", []):
         if framework.get("name") not in CRITICAL_FRAMEWORKS:
             continue
@@ -131,7 +178,6 @@ def build_critical_report(report):
             "action": "Align this framework with the selected Spring/Java generation; inspect API and configuration changes before upgrading.",
         })
 
-    # Deduplicate identical objects while preserving order.
     def unique(items):
         seen = set()
         result = []
@@ -143,10 +189,41 @@ def build_critical_report(report):
         return result
 
     build_blockers = unique(build_blockers)
-    migration_required = unique(migration_required)
     critical_dependencies = unique(critical_dependencies)
     framework_migrations = unique(framework_migrations)
     api_findings = unique(api_findings)
+
+    # Build a real migration checklist from the same findings already present in
+    # the report. This avoids a second scan and keeps the checklist consistent.
+    migration_required = []
+    if build_blockers:
+        for blocker in build_blockers:
+            if blocker.get("component") == "Java":
+                action = _migration_action(blocker, "java")
+                if action:
+                    migration_required.append(action)
+
+    for dependency in critical_dependencies:
+        action = _migration_action(dependency, "dependency")
+        if action:
+            migration_required.append(action)
+
+    for framework in framework_migrations:
+        action = _migration_action(framework, "framework")
+        if action:
+            migration_required.append(action)
+
+    for finding in api_findings:
+        action = _migration_action(finding, "api")
+        if action:
+            migration_required.append(action)
+
+    # Preserve order while removing duplicate migration tasks by ID.
+    seen_ids = set()
+    migration_required = [
+        item for item in migration_required
+        if not (item["id"] in seen_ids or seen_ids.add(item["id"]))
+    ]
 
     return {
         "report_type": "critical_migration_only",
@@ -161,6 +238,7 @@ def build_critical_report(report):
             "critical_dependencies": len(critical_dependencies),
             "framework_migrations": len(framework_migrations),
             "api_findings": len(api_findings),
+            "migration_required": len(migration_required),
             "routine_dependencies_excluded": max(
                 0,
                 report.get("scan_summary", {}).get("dependencies_detected", 0)
