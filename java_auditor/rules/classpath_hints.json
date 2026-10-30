@@ -1,0 +1,21 @@
+{
+  "description": "Maps unresolved class package prefixes to likely artifacts",
+  "hints": [
+    {"prefix":"org/apache/log4j/","artifact":"log4j:log4j:1.2.17"},
+    {"prefix":"org/slf4j/","artifact":"org.slf4j:slf4j-api"},
+    {"prefix":"org/apache/commons/logging/","artifact":"commons-logging:commons-logging"},
+    {"prefix":"org/apache/commons/lang3/","artifact":"org.apache.commons:commons-lang3"},
+    {"prefix":"org/apache/commons/io/","artifact":"commons-io:commons-io"},
+    {"prefix":"org/apache/http/","artifact":"org.apache.httpcomponents:httpclient"},
+    {"prefix":"com/fasterxml/jackson/","artifact":"com.fasterxml.jackson.core:jackson-databind"},
+    {"prefix":"com/google/gson/","artifact":"com.google.code.gson:gson"},
+    {"prefix":"com/google/common/","artifact":"com.google.guava:guava"},
+    {"prefix":"org/springframework/","artifact":"org.springframework:spring-*"},
+    {"prefix":"org/hibernate/","artifact":"org.hibernate:hibernate-core"},
+    {"prefix":"javax/servlet/","artifact":"javax.servlet:javax.servlet-api (provided by container)"},
+    {"prefix":"javax/persistence/","artifact":"javax.persistence:javax.persistence-api"},
+    {"prefix":"javax/validation/","artifact":"javax.validation:validation-api"}
+  ],
+  "containerProvidedPrefixes":["javax/servlet/","jakarta/servlet/","javax/websocket/","jakarta/websocket/","javax/el/","jakarta/el/","javax/jms/","jakarta/jms/"],
+  "jdkPrefixes":["java/","javax/swing/","javax/crypto/","javax/net/","javax/security/","javax/sql/","javax/xml/parsers/","javax/xml/transform/","javax/xml/xpath/","javax/xml/stream/","javax/xml/datatype/","javax/xml/namespace/","javax/xml/validation/","javax/naming/","javax/management/","javax/imageio/","javax/print/","javax/sound/","javax/tools/","javax/script/","javax/annotation/processing/","javax/accessibility/","javax/smartcardio/","javax/rmi/ssl/","javax/security/auth/","org/w3c/dom/","org/xml/sax/","org/ietf/jgss/","org/omg/","sun/","com/sun/","jdk/"]
+}
