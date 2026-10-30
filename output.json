@@ -1,24 +1,27 @@
 {
   "auditor_version": "4.0",
-  "generated_at": "2026-10-30T08:32:44+00:00",
+  "generated_at": "2026-10-30T09:50:38+00:00",
   "project_path": "/mnt/MyDocuments/Java-Project/Java_Full_Stack_Project",
   "project_name": "Java_Full_Stack_Project",
   "build_system": "Maven",
   "current_java": "11",
   "minimum_java": "8",
+  "target_java": "21",
   "scan_summary": {
     "build_files_found": 1,
     "modules_analyzed": 1,
     "dependencies_detected": 112,
-    "dependencies_with_updates": 0,
+    "dependencies_with_updates": 107,
     "dependency_status_counts": {
-      "CHECK_UNAVAILABLE": 112
+      "CURRENT": 5,
+      "MAJOR_UPDATE_AVAILABLE": 14,
+      "NEEDS_UPDATE": 93
     },
-    "frameworks_detected_before_update_filter": 6,
-    "framework_updates_reported": 0,
+    "frameworks_detected": 6,
+    "frameworks_reported": 6,
+    "framework_updates_reported": 6,
     "missing_references_found": 0,
-    "dependency_resolution_diagnostics": [],
-    "target_java": "21"
+    "dependency_resolution_diagnostics": []
   },
   "modules": [
     {
@@ -29,33 +32,2292 @@
       "java_version": "11"
     }
   ],
-  "frameworks": [],
-  "dependencies": [],
-  "missing_files": [],
-  "issues": [
+  "frameworks": [
     {
-      "title": "Java target upgrade required",
-      "severity": "HIGH",
-      "status": "NEEDS_CHANGES",
-      "path": "/mnt/MyDocuments/Java-Project/Java_Full_Stack_Project",
-      "current_version": "11",
-      "recommended_version": "21",
-      "message": "Project targets Java 11; requested target is Java 21."
+      "name": "Hibernate",
+      "version": "5.6.12.Final",
+      "component": "org.hibernate:hibernate-core",
+      "module": "backend",
+      "source": "backend/pom.xml",
+      "latest_version": "7.4.14.Final",
+      "recommended_version": "5.6.15.Final",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "JPA",
+      "version": "2.2.3",
+      "component": "jakarta.persistence:jakarta.persistence-api",
+      "module": "backend",
+      "source": "backend/pom.xml",
+      "latest_version": "4.0.0-M2",
+      "recommended_version": "4.0.0-M2",
+      "version_status": "MAJOR_UPDATE_AVAILABLE"
+    },
+    {
+      "name": "Spring Boot",
+      "version": "2.7.5",
+      "component": "org.springframework.boot:spring-boot",
+      "module": "backend",
+      "source": "backend/pom.xml",
+      "latest_version": "4.2.0-M2",
+      "recommended_version": "2.7.18",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "Spring Framework",
+      "version": "5.3.23",
+      "component": "org.springframework:spring-core",
+      "module": "backend",
+      "source": "backend/pom.xml",
+      "latest_version": "7.1.0-M2",
+      "recommended_version": "5.3.39",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "Spring MVC",
+      "version": "5.3.23",
+      "component": "org.springframework:spring-webmvc",
+      "module": "backend",
+      "source": "backend/pom.xml",
+      "latest_version": "7.1.0-M2",
+      "recommended_version": "5.3.39",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "Spring Security",
+      "version": "5.7.4",
+      "component": "org.springframework.security:spring-security-core",
+      "module": "backend",
+      "source": "backend/pom.xml",
+      "latest_version": "7.2.0-M2",
+      "recommended_version": "5.8.16",
+      "version_status": "NEEDS_UPDATE"
     }
   ],
+  "dependencies": [
+    {
+      "name": "antlr:antlr",
+      "version": "2.7.7",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "20030911",
+      "recommended_version": "20030911",
+      "version_status": "MAJOR_UPDATE_AVAILABLE"
+    },
+    {
+      "name": "ch.qos.logback:logback-classic",
+      "version": "1.2.11",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "1.6.6",
+      "recommended_version": "1.6.6",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "ch.qos.logback:logback-core",
+      "version": "1.2.11",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "1.6.6",
+      "recommended_version": "1.6.6",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "com.fasterxml:classmate",
+      "version": "1.5.1",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "1.8.0",
+      "recommended_version": "1.8.0",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "com.fasterxml.jackson.core:jackson-annotations",
+      "version": "2.13.4",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "2.22",
+      "recommended_version": "2.22",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "com.fasterxml.jackson.core:jackson-core",
+      "version": "2.13.4",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "2.22.4",
+      "recommended_version": "2.22.4",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "com.fasterxml.jackson.core:jackson-databind",
+      "version": "2.13.4.2",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "2.22.4",
+      "recommended_version": "2.22.4",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml",
+      "version": "2.13.4",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "2.22.4",
+      "recommended_version": "2.22.4",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "com.fasterxml.jackson.datatype:jackson-datatype-jdk8",
+      "version": "2.13.4",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "2.22.4",
+      "recommended_version": "2.22.4",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "com.fasterxml.jackson.datatype:jackson-datatype-jsr310",
+      "version": "2.13.4",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "2.22.4",
+      "recommended_version": "2.22.4",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "com.fasterxml.jackson.module:jackson-module-parameter-names",
+      "version": "2.13.4",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "2.22.4",
+      "recommended_version": "2.22.4",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "com.github.javafaker:javafaker",
+      "version": "1.0.2",
+      "scope": "compile",
+      "type": "direct",
+      "version_source": "property/direct declaration",
+      "module": "backend",
+      "latest_version": "1.0.2",
+      "recommended_version": "1.0.2",
+      "version_status": "CURRENT"
+    },
+    {
+      "name": "com.github.mifmif:generex",
+      "version": "1.0.2",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "1.0.2",
+      "recommended_version": "1.0.2",
+      "version_status": "CURRENT"
+    },
+    {
+      "name": "com.jayway.jsonpath:json-path",
+      "version": "2.7.0",
+      "scope": "test",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "3.0.0",
+      "recommended_version": "2.10.0",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "com.mysql:mysql-connector-j",
+      "version": "8.0.33",
+      "scope": "runtime",
+      "type": "direct",
+      "version_source": "property/direct declaration",
+      "module": "backend",
+      "latest_version": "26.10.0",
+      "recommended_version": "8.4.0",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "com.sun.activation:jakarta.activation",
+      "version": "1.2.2",
+      "scope": "runtime",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "2.0.1",
+      "recommended_version": "2.0.1",
+      "version_status": "MAJOR_UPDATE_AVAILABLE"
+    },
+    {
+      "name": "com.sun.istack:istack-commons-runtime",
+      "version": "3.0.12",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "4.2.0",
+      "recommended_version": "4.2.0",
+      "version_status": "MAJOR_UPDATE_AVAILABLE"
+    },
+    {
+      "name": "com.vaadin.external.google:android-json",
+      "version": "0.0.20131108.vaadin1",
+      "scope": "test",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "0.0.20131108.vaadin1",
+      "recommended_version": "0.0.20131108.vaadin1",
+      "version_status": "CURRENT"
+    },
+    {
+      "name": "com.zaxxer:HikariCP",
+      "version": "4.0.3",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "7.1.0",
+      "recommended_version": "7.1.0",
+      "version_status": "MAJOR_UPDATE_AVAILABLE"
+    },
+    {
+      "name": "dk.brics.automaton:automaton",
+      "version": "1.11-8",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "1.11-8",
+      "recommended_version": "1.11-8",
+      "version_status": "CURRENT"
+    },
+    {
+      "name": "io.jsonwebtoken:jjwt",
+      "version": "0.9.1",
+      "scope": "compile",
+      "type": "direct",
+      "version_source": "property/direct declaration",
+      "module": "backend",
+      "latest_version": "0.13.0",
+      "recommended_version": "0.13.0",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "io.swagger.core.v3:swagger-annotations",
+      "version": "2.2.9",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "3.0.0",
+      "recommended_version": "2.2.55",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "io.swagger.core.v3:swagger-core",
+      "version": "2.2.9",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "3.0.0",
+      "recommended_version": "2.2.55",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "io.swagger.core.v3:swagger-models",
+      "version": "2.2.9",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "3.0.0",
+      "recommended_version": "2.2.55",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "jakarta.activation:jakarta.activation-api",
+      "version": "1.2.2",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "2.2.0-M1",
+      "recommended_version": "2.2.0-M1",
+      "version_status": "MAJOR_UPDATE_AVAILABLE"
+    },
+    {
+      "name": "jakarta.annotation:jakarta.annotation-api",
+      "version": "1.3.5",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "3.0.0-M1",
+      "recommended_version": "3.0.0-M1",
+      "version_status": "MAJOR_UPDATE_AVAILABLE"
+    },
+    {
+      "name": "jakarta.persistence:jakarta.persistence-api",
+      "version": "2.2.3",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "4.0.0-M2",
+      "recommended_version": "4.0.0-M2",
+      "version_status": "MAJOR_UPDATE_AVAILABLE"
+    },
+    {
+      "name": "jakarta.transaction:jakarta.transaction-api",
+      "version": "1.3.3",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "2.0.1",
+      "recommended_version": "2.0.1",
+      "version_status": "MAJOR_UPDATE_AVAILABLE"
+    },
+    {
+      "name": "jakarta.validation:jakarta.validation-api",
+      "version": "2.0.2",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "4.0.0-M1",
+      "recommended_version": "4.0.0-M1",
+      "version_status": "MAJOR_UPDATE_AVAILABLE"
+    },
+    {
+      "name": "jakarta.xml.bind:jakarta.xml.bind-api",
+      "version": "2.3.3",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "4.1.0-M1",
+      "recommended_version": "4.1.0-M1",
+      "version_status": "MAJOR_UPDATE_AVAILABLE"
+    },
+    {
+      "name": "net.bytebuddy:byte-buddy",
+      "version": "1.12.18",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "1.18.16-jdk5",
+      "recommended_version": "1.18.16-jdk5",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "net.bytebuddy:byte-buddy-agent",
+      "version": "1.12.18",
+      "scope": "test",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "1.18.16-jdk5",
+      "recommended_version": "1.18.16-jdk5",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "net.minidev:accessors-smart",
+      "version": "2.4.8",
+      "scope": "test",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "2.6.0",
+      "recommended_version": "2.6.0",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "net.minidev:json-smart",
+      "version": "2.4.8",
+      "scope": "test",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "2.6.0",
+      "recommended_version": "2.6.0",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.apache.commons:commons-lang3",
+      "version": "3.12.0",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "3.21.0",
+      "recommended_version": "3.21.0",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.apache.logging.log4j:log4j-api",
+      "version": "2.17.2",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "2.26.1",
+      "recommended_version": "2.26.1",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.apache.logging.log4j:log4j-to-slf4j",
+      "version": "2.17.2",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "2.26.1",
+      "recommended_version": "2.26.1",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.apache.tomcat.embed:tomcat-embed-core",
+      "version": "9.0.68",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "11.0.27",
+      "recommended_version": "9.0.123",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.apache.tomcat.embed:tomcat-embed-el",
+      "version": "9.0.68",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "11.0.27",
+      "recommended_version": "9.0.123",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.apache.tomcat.embed:tomcat-embed-websocket",
+      "version": "9.0.68",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "11.0.27",
+      "recommended_version": "9.0.123",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.apiguardian:apiguardian-api",
+      "version": "1.1.2",
+      "scope": "test",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "1.1.2",
+      "recommended_version": "1.1.2",
+      "version_status": "CURRENT"
+    },
+    {
+      "name": "org.aspectj:aspectjweaver",
+      "version": "1.9.7",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "1.9.26",
+      "recommended_version": "1.9.26",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.assertj:assertj-core",
+      "version": "3.22.0",
+      "scope": "test",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "4.0.0-M1",
+      "recommended_version": "3.27.7",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.glassfish.jaxb:jaxb-runtime",
+      "version": "2.3.7",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "4.0.9",
+      "recommended_version": "2.4.0-b180725.0644",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.glassfish.jaxb:txw2",
+      "version": "2.3.7",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "4.0.9",
+      "recommended_version": "2.4.0-b180725.0644",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.hamcrest:hamcrest",
+      "version": "2.2",
+      "scope": "test",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "3.0",
+      "recommended_version": "3.0",
+      "version_status": "MAJOR_UPDATE_AVAILABLE"
+    },
+    {
+      "name": "org.hibernate:hibernate-core",
+      "version": "5.6.12.Final",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "7.4.14.Final",
+      "recommended_version": "5.6.15.Final",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.hibernate.common:hibernate-commons-annotations",
+      "version": "5.1.2.Final",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "7.0.3.Final",
+      "recommended_version": "7.0.3.Final",
+      "version_status": "MAJOR_UPDATE_AVAILABLE"
+    },
+    {
+      "name": "org.jboss:jandex",
+      "version": "2.4.2.Final",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "3.3.1",
+      "recommended_version": "2.4.5.Final",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.jboss.logging:jboss-logging",
+      "version": "3.4.3.Final",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "3.6.3.Final",
+      "recommended_version": "3.6.3.Final",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.junit.jupiter:junit-jupiter",
+      "version": "5.8.2",
+      "scope": "test",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "6.1.3",
+      "recommended_version": "5.14.4",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.junit.jupiter:junit-jupiter-api",
+      "version": "5.8.2",
+      "scope": "test",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "6.1.3",
+      "recommended_version": "5.14.4",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.junit.jupiter:junit-jupiter-engine",
+      "version": "5.8.2",
+      "scope": "test",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "6.1.3",
+      "recommended_version": "5.14.4",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.junit.jupiter:junit-jupiter-params",
+      "version": "5.8.2",
+      "scope": "test",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "6.1.3",
+      "recommended_version": "5.14.4",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.junit.platform:junit-platform-commons",
+      "version": "1.8.2",
+      "scope": "test",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "6.1.3",
+      "recommended_version": "1.14.4",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.junit.platform:junit-platform-engine",
+      "version": "1.8.2",
+      "scope": "test",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "6.1.3",
+      "recommended_version": "1.14.4",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.mockito:mockito-core",
+      "version": "4.5.1",
+      "scope": "test",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "5.24.0",
+      "recommended_version": "4.11.0",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.mockito:mockito-junit-jupiter",
+      "version": "4.5.1",
+      "scope": "test",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "5.24.0",
+      "recommended_version": "4.11.0",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.mongodb:bson",
+      "version": "4.6.1",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "5.14.0",
+      "recommended_version": "4.11.5",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.mongodb:bson-record-codec",
+      "version": "4.6.1",
+      "scope": "runtime",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "5.14.0",
+      "recommended_version": "4.11.5",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.mongodb:mongodb-driver-core",
+      "version": "4.6.1",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "5.14.0",
+      "recommended_version": "4.11.5",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.mongodb:mongodb-driver-sync",
+      "version": "4.6.1",
+      "scope": "compile",
+      "type": "direct",
+      "version_source": "inherited or BOM-managed",
+      "module": "backend",
+      "latest_version": "5.14.0",
+      "recommended_version": "4.11.5",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.objenesis:objenesis",
+      "version": "3.2",
+      "scope": "test",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "3.6",
+      "recommended_version": "3.6",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.opentest4j:opentest4j",
+      "version": "1.2.0",
+      "scope": "test",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "1.3.0",
+      "recommended_version": "1.3.0",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.ow2.asm:asm",
+      "version": "9.1",
+      "scope": "test",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "9.11.1",
+      "recommended_version": "9.11.1",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.projectlombok:lombok",
+      "version": "1.18.30",
+      "scope": "provided",
+      "type": "direct",
+      "version_source": "property/direct declaration",
+      "module": "backend",
+      "latest_version": "1.18.48",
+      "recommended_version": "1.18.48",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.skyscreamer:jsonassert",
+      "version": "1.5.1",
+      "scope": "test",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "1.5.3",
+      "recommended_version": "1.5.3",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.slf4j:jul-to-slf4j",
+      "version": "1.7.36",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "2.0.20",
+      "recommended_version": "2.0.20",
+      "version_status": "MAJOR_UPDATE_AVAILABLE"
+    },
+    {
+      "name": "org.slf4j:slf4j-api",
+      "version": "1.7.36",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "2.0.20",
+      "recommended_version": "2.0.20",
+      "version_status": "MAJOR_UPDATE_AVAILABLE"
+    },
+    {
+      "name": "org.springdoc:springdoc-openapi-common",
+      "version": "1.7.0",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "1.8.0",
+      "recommended_version": "1.8.0",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.springdoc:springdoc-openapi-ui",
+      "version": "1.7.0",
+      "scope": "compile",
+      "type": "direct",
+      "version_source": "property/direct declaration",
+      "module": "backend",
+      "latest_version": "1.8.0",
+      "recommended_version": "1.8.0",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.springdoc:springdoc-openapi-webmvc-core",
+      "version": "1.7.0",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "1.8.0",
+      "recommended_version": "1.8.0",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.springframework:spring-aop",
+      "version": "5.3.23",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "7.1.0-M2",
+      "recommended_version": "5.3.39",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.springframework:spring-aspects",
+      "version": "5.3.23",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "7.1.0-M2",
+      "recommended_version": "5.3.39",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.springframework:spring-beans",
+      "version": "5.3.23",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "7.1.0-M2",
+      "recommended_version": "5.3.39",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.springframework:spring-context",
+      "version": "5.3.23",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "7.1.0-M2",
+      "recommended_version": "5.3.39",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.springframework:spring-core",
+      "version": "5.3.23",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "7.1.0-M2",
+      "recommended_version": "5.3.39",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.springframework:spring-expression",
+      "version": "5.3.23",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "7.1.0-M2",
+      "recommended_version": "5.3.39",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.springframework:spring-jcl",
+      "version": "5.3.23",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "6.2.19",
+      "recommended_version": "5.3.39",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.springframework:spring-jdbc",
+      "version": "5.3.23",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "7.1.0-M2",
+      "recommended_version": "5.3.39",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.springframework:spring-orm",
+      "version": "5.3.23",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "7.1.0-M2",
+      "recommended_version": "5.3.39",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.springframework:spring-test",
+      "version": "5.3.23",
+      "scope": "test",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "7.1.0-M2",
+      "recommended_version": "5.3.39",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.springframework:spring-tx",
+      "version": "5.3.23",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "7.1.0-M2",
+      "recommended_version": "5.3.39",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.springframework:spring-web",
+      "version": "5.3.23",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "7.1.0-M2",
+      "recommended_version": "5.3.39",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.springframework:spring-webmvc",
+      "version": "5.3.23",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "7.1.0-M2",
+      "recommended_version": "5.3.39",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.springframework.boot:spring-boot",
+      "version": "2.7.5",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "4.2.0-M2",
+      "recommended_version": "2.7.18",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.springframework.boot:spring-boot-autoconfigure",
+      "version": "2.7.5",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "4.2.0-M2",
+      "recommended_version": "2.7.18",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.springframework.boot:spring-boot-devtools",
+      "version": "2.7.5",
+      "scope": "compile",
+      "type": "direct",
+      "version_source": "inherited or BOM-managed",
+      "module": "backend",
+      "latest_version": "4.2.0-M2",
+      "recommended_version": "2.7.18",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.springframework.boot:spring-boot-starter",
+      "version": "2.7.5",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "4.2.0-M2",
+      "recommended_version": "2.7.18",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.springframework.boot:spring-boot-starter-aop",
+      "version": "2.7.5",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "4.0.0-M1",
+      "recommended_version": "2.7.18",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.springframework.boot:spring-boot-starter-data-jpa",
+      "version": "2.7.5",
+      "scope": "compile",
+      "type": "direct",
+      "version_source": "inherited or BOM-managed",
+      "module": "backend",
+      "latest_version": "4.2.0-M2",
+      "recommended_version": "2.7.18",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.springframework.boot:spring-boot-starter-data-mongodb",
+      "version": "2.7.5",
+      "scope": "compile",
+      "type": "direct",
+      "version_source": "inherited or BOM-managed",
+      "module": "backend",
+      "latest_version": "4.2.0-M2",
+      "recommended_version": "2.7.18",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.springframework.boot:spring-boot-starter-jdbc",
+      "version": "2.7.5",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "4.2.0-M2",
+      "recommended_version": "2.7.18",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.springframework.boot:spring-boot-starter-json",
+      "version": "2.7.5",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "4.2.0-M2",
+      "recommended_version": "2.7.18",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.springframework.boot:spring-boot-starter-logging",
+      "version": "2.7.5",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "4.2.0-M2",
+      "recommended_version": "2.7.18",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.springframework.boot:spring-boot-starter-security",
+      "version": "2.7.5",
+      "scope": "compile",
+      "type": "direct",
+      "version_source": "inherited or BOM-managed",
+      "module": "backend",
+      "latest_version": "4.2.0-M2",
+      "recommended_version": "2.7.18",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.springframework.boot:spring-boot-starter-test",
+      "version": "2.7.5",
+      "scope": "test",
+      "type": "direct",
+      "version_source": "inherited or BOM-managed",
+      "module": "backend",
+      "latest_version": "4.2.0-M2",
+      "recommended_version": "2.7.18",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.springframework.boot:spring-boot-starter-tomcat",
+      "version": "2.7.5",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "4.2.0-M2",
+      "recommended_version": "2.7.18",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.springframework.boot:spring-boot-starter-web",
+      "version": "2.7.5",
+      "scope": "compile",
+      "type": "direct",
+      "version_source": "inherited or BOM-managed",
+      "module": "backend",
+      "latest_version": "4.2.0-M2",
+      "recommended_version": "2.7.18",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.springframework.boot:spring-boot-test",
+      "version": "2.7.5",
+      "scope": "test",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "4.2.0-M2",
+      "recommended_version": "2.7.18",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.springframework.boot:spring-boot-test-autoconfigure",
+      "version": "2.7.5",
+      "scope": "test",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "4.2.0-M2",
+      "recommended_version": "2.7.18",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.springframework.data:spring-data-commons",
+      "version": "2.7.5",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "4.2.0-M2",
+      "recommended_version": "2.7.18",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.springframework.data:spring-data-jpa",
+      "version": "2.7.5",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "4.2.0-M2",
+      "recommended_version": "2.7.18",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.springframework.data:spring-data-mongodb",
+      "version": "3.4.5",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "5.2.0-M1",
+      "recommended_version": "3.4.18",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.springframework.security:spring-security-config",
+      "version": "5.7.4",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "7.2.0-M2",
+      "recommended_version": "5.8.16",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.springframework.security:spring-security-core",
+      "version": "5.7.4",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "7.2.0-M2",
+      "recommended_version": "5.8.16",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.springframework.security:spring-security-crypto",
+      "version": "5.7.4",
+      "scope": "compile",
+      "type": "direct",
+      "version_source": "inherited or BOM-managed",
+      "module": "backend",
+      "latest_version": "7.2.0-M2",
+      "recommended_version": "5.8.16",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.springframework.security:spring-security-web",
+      "version": "5.7.4",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "7.2.0-M2",
+      "recommended_version": "5.8.16",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.webjars:swagger-ui",
+      "version": "4.18.2",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "5.34.0",
+      "recommended_version": "4.19.1",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.xmlunit:xmlunit-core",
+      "version": "2.9.0",
+      "scope": "test",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "2.14.0",
+      "recommended_version": "2.14.0",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.yaml:snakeyaml",
+      "version": "1.23",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "2.7",
+      "recommended_version": "1.33",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.yaml:snakeyaml",
+      "version": "1.30",
+      "scope": "compile",
+      "type": "transitive",
+      "version_source": "resolved Maven dependency tree",
+      "module": "backend",
+      "latest_version": "2.7",
+      "recommended_version": "1.33",
+      "version_status": "NEEDS_UPDATE"
+    }
+  ],
+  "missing_files": [],
+  "api_findings": {
+    "deprecatedApis": [],
+    "internalApiUsage": [],
+    "namespaceMigration": [
+      {
+        "ruleId": "NS-PERSISTENCE",
+        "severity": "BLOCKER",
+        "from": "javax.persistence.*",
+        "to": "jakarta.persistence.*",
+        "filesAffected": 3,
+        "occurrences": 3,
+        "reason": "Required by Spring Boot 3, Spring Framework 6, Tomcat 10+, Hibernate 6",
+        "locations": [
+          {
+            "class": "com.example.employeemanagement.model.Department"
+          },
+          {
+            "class": "com.example.employeemanagement.model.Employee"
+          },
+          {
+            "class": "com.example.employeemanagement.model.User"
+          }
+        ]
+      },
+      {
+        "ruleId": "NS-SERVLET",
+        "severity": "BLOCKER",
+        "from": "javax.servlet.*",
+        "to": "jakarta.servlet.*",
+        "filesAffected": 1,
+        "occurrences": 4,
+        "reason": "Required by Spring Boot 3, Spring Framework 6, Tomcat 10+, Hibernate 6",
+        "locations": [
+          {
+            "class": "com.example.employeemanagement.security.JwtRequestFilter"
+          }
+        ]
+      }
+    ]
+  },
+  "api_scan": {
+    "basis": "source",
+    "units_scanned": 30
+  },
+  "issues": [],
   "recommendations": [
     {
-      "component": "Java",
-      "module": ".",
-      "current_version": "11",
-      "recommended_version": "21",
-      "version_status": "NEEDS_CHANGES",
-      "reason": "Project targets Java 11; requested target is Java 21."
+      "component": "Hibernate",
+      "module": "backend",
+      "current_version": "5.6.12.Final",
+      "recommended_version": "5.6.15.Final",
+      "reason": "Framework update identified from Maven Central metadata; verify Java requirements and release notes."
+    },
+    {
+      "component": "JPA",
+      "module": "backend",
+      "current_version": "2.2.3",
+      "recommended_version": "4.0.0-M2",
+      "reason": "Framework update identified from Maven Central metadata; verify Java requirements and release notes."
+    },
+    {
+      "component": "Spring Boot",
+      "module": "backend",
+      "current_version": "2.7.5",
+      "recommended_version": "2.7.18",
+      "reason": "Framework update identified from Maven Central metadata; verify Java requirements and release notes."
+    },
+    {
+      "component": "Spring Framework",
+      "module": "backend",
+      "current_version": "5.3.23",
+      "recommended_version": "5.3.39",
+      "reason": "Framework update identified from Maven Central metadata; verify Java requirements and release notes."
+    },
+    {
+      "component": "Spring MVC",
+      "module": "backend",
+      "current_version": "5.3.23",
+      "recommended_version": "5.3.39",
+      "reason": "Framework update identified from Maven Central metadata; verify Java requirements and release notes."
+    },
+    {
+      "component": "Spring Security",
+      "module": "backend",
+      "current_version": "5.7.4",
+      "recommended_version": "5.8.16",
+      "reason": "Framework update identified from Maven Central metadata; verify Java requirements and release notes."
+    },
+    {
+      "component": "antlr:antlr",
+      "module": "backend",
+      "current_version": "2.7.7",
+      "recommended_version": "20030911",
+      "reason": "A newer major version is available; review release notes and Java compatibility before upgrading."
+    },
+    {
+      "component": "ch.qos.logback:logback-classic",
+      "module": "backend",
+      "current_version": "1.2.11",
+      "recommended_version": "1.6.6",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "ch.qos.logback:logback-core",
+      "module": "backend",
+      "current_version": "1.2.11",
+      "recommended_version": "1.6.6",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "com.fasterxml.jackson.core:jackson-annotations",
+      "module": "backend",
+      "current_version": "2.13.4",
+      "recommended_version": "2.22",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "com.fasterxml.jackson.core:jackson-core",
+      "module": "backend",
+      "current_version": "2.13.4",
+      "recommended_version": "2.22.4",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "com.fasterxml.jackson.core:jackson-databind",
+      "module": "backend",
+      "current_version": "2.13.4.2",
+      "recommended_version": "2.22.4",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml",
+      "module": "backend",
+      "current_version": "2.13.4",
+      "recommended_version": "2.22.4",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "com.fasterxml.jackson.datatype:jackson-datatype-jdk8",
+      "module": "backend",
+      "current_version": "2.13.4",
+      "recommended_version": "2.22.4",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "com.fasterxml.jackson.datatype:jackson-datatype-jsr310",
+      "module": "backend",
+      "current_version": "2.13.4",
+      "recommended_version": "2.22.4",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "com.fasterxml.jackson.module:jackson-module-parameter-names",
+      "module": "backend",
+      "current_version": "2.13.4",
+      "recommended_version": "2.22.4",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "com.fasterxml:classmate",
+      "module": "backend",
+      "current_version": "1.5.1",
+      "recommended_version": "1.8.0",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "com.jayway.jsonpath:json-path",
+      "module": "backend",
+      "current_version": "2.7.0",
+      "recommended_version": "2.10.0",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "com.mysql:mysql-connector-j",
+      "module": "backend",
+      "current_version": "8.0.33",
+      "recommended_version": "8.4.0",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "com.sun.activation:jakarta.activation",
+      "module": "backend",
+      "current_version": "1.2.2",
+      "recommended_version": "2.0.1",
+      "reason": "A newer major version is available; review release notes and Java compatibility before upgrading."
+    },
+    {
+      "component": "com.sun.istack:istack-commons-runtime",
+      "module": "backend",
+      "current_version": "3.0.12",
+      "recommended_version": "4.2.0",
+      "reason": "A newer major version is available; review release notes and Java compatibility before upgrading."
+    },
+    {
+      "component": "com.zaxxer:HikariCP",
+      "module": "backend",
+      "current_version": "4.0.3",
+      "recommended_version": "7.1.0",
+      "reason": "A newer major version is available; review release notes and Java compatibility before upgrading."
+    },
+    {
+      "component": "io.jsonwebtoken:jjwt",
+      "module": "backend",
+      "current_version": "0.9.1",
+      "recommended_version": "0.13.0",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "io.swagger.core.v3:swagger-annotations",
+      "module": "backend",
+      "current_version": "2.2.9",
+      "recommended_version": "2.2.55",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "io.swagger.core.v3:swagger-core",
+      "module": "backend",
+      "current_version": "2.2.9",
+      "recommended_version": "2.2.55",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "io.swagger.core.v3:swagger-models",
+      "module": "backend",
+      "current_version": "2.2.9",
+      "recommended_version": "2.2.55",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "jakarta.activation:jakarta.activation-api",
+      "module": "backend",
+      "current_version": "1.2.2",
+      "recommended_version": "2.2.0-M1",
+      "reason": "A newer major version is available; review release notes and Java compatibility before upgrading."
+    },
+    {
+      "component": "jakarta.annotation:jakarta.annotation-api",
+      "module": "backend",
+      "current_version": "1.3.5",
+      "recommended_version": "3.0.0-M1",
+      "reason": "A newer major version is available; review release notes and Java compatibility before upgrading."
+    },
+    {
+      "component": "jakarta.persistence:jakarta.persistence-api",
+      "module": "backend",
+      "current_version": "2.2.3",
+      "recommended_version": "4.0.0-M2",
+      "reason": "A newer major version is available; review release notes and Java compatibility before upgrading."
+    },
+    {
+      "component": "jakarta.transaction:jakarta.transaction-api",
+      "module": "backend",
+      "current_version": "1.3.3",
+      "recommended_version": "2.0.1",
+      "reason": "A newer major version is available; review release notes and Java compatibility before upgrading."
+    },
+    {
+      "component": "jakarta.validation:jakarta.validation-api",
+      "module": "backend",
+      "current_version": "2.0.2",
+      "recommended_version": "4.0.0-M1",
+      "reason": "A newer major version is available; review release notes and Java compatibility before upgrading."
+    },
+    {
+      "component": "jakarta.xml.bind:jakarta.xml.bind-api",
+      "module": "backend",
+      "current_version": "2.3.3",
+      "recommended_version": "4.1.0-M1",
+      "reason": "A newer major version is available; review release notes and Java compatibility before upgrading."
+    },
+    {
+      "component": "net.bytebuddy:byte-buddy",
+      "module": "backend",
+      "current_version": "1.12.18",
+      "recommended_version": "1.18.16-jdk5",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "net.bytebuddy:byte-buddy-agent",
+      "module": "backend",
+      "current_version": "1.12.18",
+      "recommended_version": "1.18.16-jdk5",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "net.minidev:accessors-smart",
+      "module": "backend",
+      "current_version": "2.4.8",
+      "recommended_version": "2.6.0",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "net.minidev:json-smart",
+      "module": "backend",
+      "current_version": "2.4.8",
+      "recommended_version": "2.6.0",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.apache.commons:commons-lang3",
+      "module": "backend",
+      "current_version": "3.12.0",
+      "recommended_version": "3.21.0",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.apache.logging.log4j:log4j-api",
+      "module": "backend",
+      "current_version": "2.17.2",
+      "recommended_version": "2.26.1",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.apache.logging.log4j:log4j-to-slf4j",
+      "module": "backend",
+      "current_version": "2.17.2",
+      "recommended_version": "2.26.1",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.apache.tomcat.embed:tomcat-embed-core",
+      "module": "backend",
+      "current_version": "9.0.68",
+      "recommended_version": "9.0.123",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.apache.tomcat.embed:tomcat-embed-el",
+      "module": "backend",
+      "current_version": "9.0.68",
+      "recommended_version": "9.0.123",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.apache.tomcat.embed:tomcat-embed-websocket",
+      "module": "backend",
+      "current_version": "9.0.68",
+      "recommended_version": "9.0.123",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.aspectj:aspectjweaver",
+      "module": "backend",
+      "current_version": "1.9.7",
+      "recommended_version": "1.9.26",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.assertj:assertj-core",
+      "module": "backend",
+      "current_version": "3.22.0",
+      "recommended_version": "3.27.7",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.glassfish.jaxb:jaxb-runtime",
+      "module": "backend",
+      "current_version": "2.3.7",
+      "recommended_version": "2.4.0-b180725.0644",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.glassfish.jaxb:txw2",
+      "module": "backend",
+      "current_version": "2.3.7",
+      "recommended_version": "2.4.0-b180725.0644",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.hamcrest:hamcrest",
+      "module": "backend",
+      "current_version": "2.2",
+      "recommended_version": "3.0",
+      "reason": "A newer major version is available; review release notes and Java compatibility before upgrading."
+    },
+    {
+      "component": "org.hibernate.common:hibernate-commons-annotations",
+      "module": "backend",
+      "current_version": "5.1.2.Final",
+      "recommended_version": "7.0.3.Final",
+      "reason": "A newer major version is available; review release notes and Java compatibility before upgrading."
+    },
+    {
+      "component": "org.hibernate:hibernate-core",
+      "module": "backend",
+      "current_version": "5.6.12.Final",
+      "recommended_version": "5.6.15.Final",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.jboss.logging:jboss-logging",
+      "module": "backend",
+      "current_version": "3.4.3.Final",
+      "recommended_version": "3.6.3.Final",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.jboss:jandex",
+      "module": "backend",
+      "current_version": "2.4.2.Final",
+      "recommended_version": "2.4.5.Final",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.junit.jupiter:junit-jupiter",
+      "module": "backend",
+      "current_version": "5.8.2",
+      "recommended_version": "5.14.4",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.junit.jupiter:junit-jupiter-api",
+      "module": "backend",
+      "current_version": "5.8.2",
+      "recommended_version": "5.14.4",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.junit.jupiter:junit-jupiter-engine",
+      "module": "backend",
+      "current_version": "5.8.2",
+      "recommended_version": "5.14.4",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.junit.jupiter:junit-jupiter-params",
+      "module": "backend",
+      "current_version": "5.8.2",
+      "recommended_version": "5.14.4",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.junit.platform:junit-platform-commons",
+      "module": "backend",
+      "current_version": "1.8.2",
+      "recommended_version": "1.14.4",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.junit.platform:junit-platform-engine",
+      "module": "backend",
+      "current_version": "1.8.2",
+      "recommended_version": "1.14.4",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.mockito:mockito-core",
+      "module": "backend",
+      "current_version": "4.5.1",
+      "recommended_version": "4.11.0",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.mockito:mockito-junit-jupiter",
+      "module": "backend",
+      "current_version": "4.5.1",
+      "recommended_version": "4.11.0",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.mongodb:bson",
+      "module": "backend",
+      "current_version": "4.6.1",
+      "recommended_version": "4.11.5",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.mongodb:bson-record-codec",
+      "module": "backend",
+      "current_version": "4.6.1",
+      "recommended_version": "4.11.5",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.mongodb:mongodb-driver-core",
+      "module": "backend",
+      "current_version": "4.6.1",
+      "recommended_version": "4.11.5",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.mongodb:mongodb-driver-sync",
+      "module": "backend",
+      "current_version": "4.6.1",
+      "recommended_version": "4.11.5",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.objenesis:objenesis",
+      "module": "backend",
+      "current_version": "3.2",
+      "recommended_version": "3.6",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.opentest4j:opentest4j",
+      "module": "backend",
+      "current_version": "1.2.0",
+      "recommended_version": "1.3.0",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.ow2.asm:asm",
+      "module": "backend",
+      "current_version": "9.1",
+      "recommended_version": "9.11.1",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.projectlombok:lombok",
+      "module": "backend",
+      "current_version": "1.18.30",
+      "recommended_version": "1.18.48",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.skyscreamer:jsonassert",
+      "module": "backend",
+      "current_version": "1.5.1",
+      "recommended_version": "1.5.3",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.slf4j:jul-to-slf4j",
+      "module": "backend",
+      "current_version": "1.7.36",
+      "recommended_version": "2.0.20",
+      "reason": "A newer major version is available; review release notes and Java compatibility before upgrading."
+    },
+    {
+      "component": "org.slf4j:slf4j-api",
+      "module": "backend",
+      "current_version": "1.7.36",
+      "recommended_version": "2.0.20",
+      "reason": "A newer major version is available; review release notes and Java compatibility before upgrading."
+    },
+    {
+      "component": "org.springdoc:springdoc-openapi-common",
+      "module": "backend",
+      "current_version": "1.7.0",
+      "recommended_version": "1.8.0",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springdoc:springdoc-openapi-ui",
+      "module": "backend",
+      "current_version": "1.7.0",
+      "recommended_version": "1.8.0",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springdoc:springdoc-openapi-webmvc-core",
+      "module": "backend",
+      "current_version": "1.7.0",
+      "recommended_version": "1.8.0",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springframework.boot:spring-boot",
+      "module": "backend",
+      "current_version": "2.7.5",
+      "recommended_version": "2.7.18",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springframework.boot:spring-boot-autoconfigure",
+      "module": "backend",
+      "current_version": "2.7.5",
+      "recommended_version": "2.7.18",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springframework.boot:spring-boot-devtools",
+      "module": "backend",
+      "current_version": "2.7.5",
+      "recommended_version": "2.7.18",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springframework.boot:spring-boot-starter",
+      "module": "backend",
+      "current_version": "2.7.5",
+      "recommended_version": "2.7.18",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springframework.boot:spring-boot-starter-aop",
+      "module": "backend",
+      "current_version": "2.7.5",
+      "recommended_version": "2.7.18",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springframework.boot:spring-boot-starter-data-jpa",
+      "module": "backend",
+      "current_version": "2.7.5",
+      "recommended_version": "2.7.18",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springframework.boot:spring-boot-starter-data-mongodb",
+      "module": "backend",
+      "current_version": "2.7.5",
+      "recommended_version": "2.7.18",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springframework.boot:spring-boot-starter-jdbc",
+      "module": "backend",
+      "current_version": "2.7.5",
+      "recommended_version": "2.7.18",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springframework.boot:spring-boot-starter-json",
+      "module": "backend",
+      "current_version": "2.7.5",
+      "recommended_version": "2.7.18",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springframework.boot:spring-boot-starter-logging",
+      "module": "backend",
+      "current_version": "2.7.5",
+      "recommended_version": "2.7.18",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springframework.boot:spring-boot-starter-security",
+      "module": "backend",
+      "current_version": "2.7.5",
+      "recommended_version": "2.7.18",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springframework.boot:spring-boot-starter-test",
+      "module": "backend",
+      "current_version": "2.7.5",
+      "recommended_version": "2.7.18",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springframework.boot:spring-boot-starter-tomcat",
+      "module": "backend",
+      "current_version": "2.7.5",
+      "recommended_version": "2.7.18",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springframework.boot:spring-boot-starter-web",
+      "module": "backend",
+      "current_version": "2.7.5",
+      "recommended_version": "2.7.18",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springframework.boot:spring-boot-test",
+      "module": "backend",
+      "current_version": "2.7.5",
+      "recommended_version": "2.7.18",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springframework.boot:spring-boot-test-autoconfigure",
+      "module": "backend",
+      "current_version": "2.7.5",
+      "recommended_version": "2.7.18",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springframework.data:spring-data-commons",
+      "module": "backend",
+      "current_version": "2.7.5",
+      "recommended_version": "2.7.18",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springframework.data:spring-data-jpa",
+      "module": "backend",
+      "current_version": "2.7.5",
+      "recommended_version": "2.7.18",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springframework.data:spring-data-mongodb",
+      "module": "backend",
+      "current_version": "3.4.5",
+      "recommended_version": "3.4.18",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springframework.security:spring-security-config",
+      "module": "backend",
+      "current_version": "5.7.4",
+      "recommended_version": "5.8.16",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springframework.security:spring-security-core",
+      "module": "backend",
+      "current_version": "5.7.4",
+      "recommended_version": "5.8.16",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springframework.security:spring-security-crypto",
+      "module": "backend",
+      "current_version": "5.7.4",
+      "recommended_version": "5.8.16",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springframework.security:spring-security-web",
+      "module": "backend",
+      "current_version": "5.7.4",
+      "recommended_version": "5.8.16",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springframework:spring-aop",
+      "module": "backend",
+      "current_version": "5.3.23",
+      "recommended_version": "5.3.39",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springframework:spring-aspects",
+      "module": "backend",
+      "current_version": "5.3.23",
+      "recommended_version": "5.3.39",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springframework:spring-beans",
+      "module": "backend",
+      "current_version": "5.3.23",
+      "recommended_version": "5.3.39",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springframework:spring-context",
+      "module": "backend",
+      "current_version": "5.3.23",
+      "recommended_version": "5.3.39",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springframework:spring-core",
+      "module": "backend",
+      "current_version": "5.3.23",
+      "recommended_version": "5.3.39",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springframework:spring-expression",
+      "module": "backend",
+      "current_version": "5.3.23",
+      "recommended_version": "5.3.39",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springframework:spring-jcl",
+      "module": "backend",
+      "current_version": "5.3.23",
+      "recommended_version": "5.3.39",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springframework:spring-jdbc",
+      "module": "backend",
+      "current_version": "5.3.23",
+      "recommended_version": "5.3.39",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springframework:spring-orm",
+      "module": "backend",
+      "current_version": "5.3.23",
+      "recommended_version": "5.3.39",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springframework:spring-test",
+      "module": "backend",
+      "current_version": "5.3.23",
+      "recommended_version": "5.3.39",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springframework:spring-tx",
+      "module": "backend",
+      "current_version": "5.3.23",
+      "recommended_version": "5.3.39",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springframework:spring-web",
+      "module": "backend",
+      "current_version": "5.3.23",
+      "recommended_version": "5.3.39",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springframework:spring-webmvc",
+      "module": "backend",
+      "current_version": "5.3.23",
+      "recommended_version": "5.3.39",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.webjars:swagger-ui",
+      "module": "backend",
+      "current_version": "4.18.2",
+      "recommended_version": "4.19.1",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.xmlunit:xmlunit-core",
+      "module": "backend",
+      "current_version": "2.9.0",
+      "recommended_version": "2.14.0",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.yaml:snakeyaml",
+      "module": "backend",
+      "current_version": "1.23",
+      "recommended_version": "1.33",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.yaml:snakeyaml",
+      "module": "backend",
+      "current_version": "1.30",
+      "recommended_version": "1.33",
+      "reason": "A newer stable release is available in the current major line."
     }
   ],
+  "migration": {
+    "target_java": "21",
+    "summary": {
+      "readiness_score": 52,
+      "readiness_level": "NEEDS_SIGNIFICANT_WORK",
+      "counts": {
+        "BLOCKER": 2,
+        "HIGH": 0,
+        "MEDIUM": 114,
+        "LOW": 0
+      }
+    },
+    "plan": [
+      {
+        "step": 1,
+        "action": "Raise the Java baseline to 21 and add replacement libraries for removed JDK modules",
+        "refs": [
+          "java_version"
+        ]
+      },
+      {
+        "step": 2,
+        "action": "Run the javax.* to jakarta.* namespace migration (e.g. OpenRewrite) and upgrade the frameworks that require it",
+        "refs": [
+          "NS-PERSISTENCE",
+          "NS-SERVLET"
+        ]
+      },
+      {
+        "step": 3,
+        "action": "Upgrade other outdated libraries, replace end-of-life ones and resolve version conflicts",
+        "refs": [
+          "component:antlr:antlr",
+          "component:ch.qos.logback:logback-classic",
+          "component:ch.qos.logback:logback-core",
+          "component:com.fasterxml:classmate",
+          "component:com.fasterxml.jackson.core:jackson-annotations",
+          "component:com.fasterxml.jackson.core:jackson-core",
+          "component:com.fasterxml.jackson.core:jackson-databind",
+          "component:com.fasterxml.jackson.dataformat:jackson-dataformat-yaml",
+          "component:com.fasterxml.jackson.datatype:jackson-datatype-jdk8",
+          "component:com.fasterxml.jackson.datatype:jackson-datatype-jsr310",
+          "component:com.fasterxml.jackson.module:jackson-module-parameter-names",
+          "component:com.jayway.jsonpath:json-path",
+          "component:com.mysql:mysql-connector-j",
+          "component:com.sun.activation:jakarta.activation",
+          "component:com.sun.istack:istack-commons-runtime",
+          "component:com.zaxxer:HikariCP",
+          "component:io.jsonwebtoken:jjwt",
+          "component:io.swagger.core.v3:swagger-annotations",
+          "component:io.swagger.core.v3:swagger-core",
+          "component:io.swagger.core.v3:swagger-models",
+          "component:jakarta.activation:jakarta.activation-api",
+          "component:jakarta.annotation:jakarta.annotation-api",
+          "component:jakarta.persistence:jakarta.persistence-api",
+          "component:jakarta.transaction:jakarta.transaction-api",
+          "component:jakarta.validation:jakarta.validation-api",
+          "component:jakarta.xml.bind:jakarta.xml.bind-api",
+          "component:net.bytebuddy:byte-buddy",
+          "component:net.bytebuddy:byte-buddy-agent",
+          "component:net.minidev:accessors-smart",
+          "component:net.minidev:json-smart",
+          "component:org.apache.commons:commons-lang3",
+          "component:org.apache.logging.log4j:log4j-api",
+          "component:org.apache.logging.log4j:log4j-to-slf4j",
+          "component:org.apache.tomcat.embed:tomcat-embed-core",
+          "component:org.apache.tomcat.embed:tomcat-embed-el",
+          "component:org.apache.tomcat.embed:tomcat-embed-websocket",
+          "component:org.aspectj:aspectjweaver",
+          "component:org.assertj:assertj-core",
+          "component:org.glassfish.jaxb:jaxb-runtime",
+          "component:org.glassfish.jaxb:txw2",
+          "component:org.hamcrest:hamcrest",
+          "component:org.hibernate:hibernate-core",
+          "component:org.hibernate.common:hibernate-commons-annotations",
+          "component:org.jboss:jandex",
+          "component:org.jboss.logging:jboss-logging",
+          "component:org.junit.jupiter:junit-jupiter",
+          "component:org.junit.jupiter:junit-jupiter-api",
+          "component:org.junit.jupiter:junit-jupiter-engine",
+          "component:org.junit.jupiter:junit-jupiter-params",
+          "component:org.junit.platform:junit-platform-commons",
+          "component:org.junit.platform:junit-platform-engine",
+          "component:org.mockito:mockito-core",
+          "component:org.mockito:mockito-junit-jupiter",
+          "component:org.mongodb:bson",
+          "component:org.mongodb:bson-record-codec",
+          "component:org.mongodb:mongodb-driver-core",
+          "component:org.mongodb:mongodb-driver-sync",
+          "component:org.objenesis:objenesis",
+          "component:org.opentest4j:opentest4j",
+          "component:org.ow2.asm:asm",
+          "component:org.projectlombok:lombok",
+          "component:org.skyscreamer:jsonassert",
+          "component:org.slf4j:jul-to-slf4j",
+          "component:org.slf4j:slf4j-api",
+          "component:org.springdoc:springdoc-openapi-common",
+          "component:org.springdoc:springdoc-openapi-ui",
+          "component:org.springdoc:springdoc-openapi-webmvc-core",
+          "component:org.springframework:spring-aop",
+          "component:org.springframework:spring-aspects",
+          "component:org.springframework:spring-beans",
+          "component:org.springframework:spring-context",
+          "component:org.springframework:spring-core",
+          "component:org.springframework:spring-expression",
+          "component:org.springframework:spring-jcl",
+          "component:org.springframework:spring-jdbc",
+          "component:org.springframework:spring-orm",
+          "component:org.springframework:spring-test",
+          "component:org.springframework:spring-tx",
+          "component:org.springframework:spring-web",
+          "component:org.springframework:spring-webmvc",
+          "component:org.springframework.boot:spring-boot",
+          "component:org.springframework.boot:spring-boot-autoconfigure",
+          "component:org.springframework.boot:spring-boot-devtools",
+          "component:org.springframework.boot:spring-boot-starter",
+          "component:org.springframework.boot:spring-boot-starter-aop",
+          "component:org.springframework.boot:spring-boot-starter-data-jpa",
+          "component:org.springframework.boot:spring-boot-starter-data-mongodb",
+          "component:org.springframework.boot:spring-boot-starter-jdbc",
+          "component:org.springframework.boot:spring-boot-starter-json",
+          "component:org.springframework.boot:spring-boot-starter-logging",
+          "component:org.springframework.boot:spring-boot-starter-security",
+          "component:org.springframework.boot:spring-boot-starter-test",
+          "component:org.springframework.boot:spring-boot-starter-tomcat",
+          "component:org.springframework.boot:spring-boot-starter-web",
+          "component:org.springframework.boot:spring-boot-test",
+          "component:org.springframework.boot:spring-boot-test-autoconfigure",
+          "component:org.springframework.data:spring-data-commons",
+          "component:org.springframework.data:spring-data-jpa",
+          "component:org.springframework.data:spring-data-mongodb",
+          "component:org.springframework.security:spring-security-config",
+          "component:org.springframework.security:spring-security-core",
+          "component:org.springframework.security:spring-security-crypto",
+          "component:org.springframework.security:spring-security-web",
+          "component:org.webjars:swagger-ui",
+          "component:org.xmlunit:xmlunit-core",
+          "component:org.yaml:snakeyaml",
+          "component:Hibernate",
+          "component:JPA",
+          "component:Spring Boot",
+          "component:Spring Framework",
+          "component:Spring MVC",
+          "component:Spring Security"
+        ]
+      }
+    ]
+  },
   "analysis_notes": [
     "No application runtime checks or build/test validation are performed.",
-    "Latest/recommended versions use Maven Central metadata with Maven Versions Plugin fallback; a component is listed for updating only when a newer release is established."
-  ],
-  "target_java": "21"
+    "All detected dependencies and frameworks are retained in the report even when version metadata is unavailable; CHECK_UNAVAILABLE means the component was found but its remote version check could not be completed.",
+    "Latest/recommended versions use Maven Central metadata with Maven Versions Plugin fallback; update recommendations are emitted only when a newer release is established."
+  ]
 }
