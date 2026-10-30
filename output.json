@@ -1,0 +1,61 @@
+{
+  "auditor_version": "4.0",
+  "generated_at": "2026-10-30T08:32:44+00:00",
+  "project_path": "/mnt/MyDocuments/Java-Project/Java_Full_Stack_Project",
+  "project_name": "Java_Full_Stack_Project",
+  "build_system": "Maven",
+  "current_java": "11",
+  "minimum_java": "8",
+  "scan_summary": {
+    "build_files_found": 1,
+    "modules_analyzed": 1,
+    "dependencies_detected": 112,
+    "dependencies_with_updates": 0,
+    "dependency_status_counts": {
+      "CHECK_UNAVAILABLE": 112
+    },
+    "frameworks_detected_before_update_filter": 6,
+    "framework_updates_reported": 0,
+    "missing_references_found": 0,
+    "dependency_resolution_diagnostics": [],
+    "target_java": "21"
+  },
+  "modules": [
+    {
+      "name": "backend",
+      "path": "backend",
+      "build_file": "backend/pom.xml",
+      "build_system": "Maven",
+      "java_version": "11"
+    }
+  ],
+  "frameworks": [],
+  "dependencies": [],
+  "missing_files": [],
+  "issues": [
+    {
+      "title": "Java target upgrade required",
+      "severity": "HIGH",
+      "status": "NEEDS_CHANGES",
+      "path": "/mnt/MyDocuments/Java-Project/Java_Full_Stack_Project",
+      "current_version": "11",
+      "recommended_version": "21",
+      "message": "Project targets Java 11; requested target is Java 21."
+    }
+  ],
+  "recommendations": [
+    {
+      "component": "Java",
+      "module": ".",
+      "current_version": "11",
+      "recommended_version": "21",
+      "version_status": "NEEDS_CHANGES",
+      "reason": "Project targets Java 11; requested target is Java 21."
+    }
+  ],
+  "analysis_notes": [
+    "No application runtime checks or build/test validation are performed.",
+    "Latest/recommended versions use Maven Central metadata with Maven Versions Plugin fallback; a component is listed for updating only when a newer release is established."
+  ],
+  "target_java": "21"
+}
