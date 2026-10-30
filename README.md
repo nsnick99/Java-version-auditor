@@ -1,62 +1,67 @@
 # Java Version Auditor
 
-One command scans a Java project and writes `output.json`. The report intentionally lists only components that need an update or a specific compatibility change.
+One command audits a Java project directory **or a packaged `.war/.jar/.ear/.zip`** and writes `output.json`. The report focuses on actionable Java-version, dependency, API, packaging and migration findings.
 
 ## Run
 
 ```bash
 python auditor.py /path/to/java-project
+python auditor.py /path/to/app.war
+python auditor.py /path/to/app.war --target-java 17
 ```
 
-On Windows:
+The default target Java version is **21**. On Windows:
 
 ```powershell
 python auditor.py "C:\Users\YourName\Desktop\Java-test"
 ```
 
-The script writes `output.json` in the Java Version Auditor repository folder (beside `auditor.py`), not in the scanned Java project's folder. The report includes `auditor_version`, `generated_at`, and `project_path` so you can verify which run produced it. There are no optional command-line modes.
+The report is written beside `auditor.py`, not inside the scanned project.
+
+## What it checks
+
+### Project directories
+- Java/build versions and module inventory
+- Maven, Gradle and Ant build files
+- Dependency versions and available updates
+- Missing declared modules/files
+- Selected deprecated API usage
+- Framework compatibility recommendations
+
+### WAR/JAR/EAR/ZIP packages
+- Compiled Java class versions
+- Embedded library inventory
+- Dependency/version conflicts and duplicate JARs
+- Declared dependencies missing from the package
+- Unresolved application class references
+- Removed/deprecated-for-removal JDK APIs
+- Internal JDK API usage such as `sun.*` and `Unsafe`
+- `javax.*` to `jakarta.*` namespace usage
+- Referenced configuration files that are missing
+- Java baseline gap versus the requested target
+- Migration readiness score and ordered migration plan
 
 ## Code structure
 
-The implementation is split into focused Python modules:
+- `auditor.py` — command-line entry point
+- `java_auditor/cli.py` — argument handling and JSON output
+- `java_auditor/config.py` — target Java and detection rules
+- `java_auditor/build_files.py` — project build-file parsing
+- `java_auditor/dependency_resolver.py` — Maven/Gradle dependency resolution
+- `java_auditor/version_checker.py` — version metadata and upgrade advice
+- `java_auditor/project_scanner.py` — project completeness/deprecated API checks
+- `java_auditor/report_builder.py` — project-directory report orchestration
+- `java_auditor/artifact_report.py` — packaged-application report orchestration
+- `java_auditor/artifact_build.py` — packaged build/Java/version detection
+- `java_auditor/artifact_components.py` — packaged library inventory and conflicts
+- `java_auditor/archive_source.py` — archive reader
+- `java_auditor/classfile.py` — lightweight `.class` parser
+- `java_auditor/bytecode_scanner.py` — bytecode compatibility and reference scanning
+- `java_auditor/migration.py` — readiness score and ordered migration plan
+- `java_auditor/rules/*.json` — data-driven compatibility and library rules
 
-- `auditor.py`: small entry point; keeps the same one-command usage
-- `java_auditor/cli.py`: command-line execution and JSON output
-- `java_auditor/config.py`: detection rules and constants
-- `java_auditor/utils.py`: shared text, path, version, and process helpers
-- `java_auditor/build_files.py`: Maven, Gradle, and Ant build-file parsing
-- `java_auditor/dependency_resolver.py`: Maven/Gradle dependency-tree resolution
-- `java_auditor/version_checker.py`: Maven Central metadata and framework/dependency version advice
-- `java_auditor/project_scanner.py`: missing Gradle-module checks and selected deprecated API scans
-- `java_auditor/report_builder.py`: audit orchestration and report construction
+No third-party Python packages are required. Maven or Gradle is used only when available for project dependency/version information; packaged-application mode can operate without them.
 
-Run it from the repository folder using the same command shown above. No third-party Python packages are required.
+## Important limitation
 
-## What appears in the report
-
-- Java/build versions and module inventory
-- `frameworks`: only frameworks with a confirmed newer version or a known Java compatibility issue
-- `dependencies`: only dependencies with an update available
-- `latest_version`, `recommended_version`, and a non-empty `version_status` for actionable updates
-- `missing_files`: missing declared modules, explicit parent paths, system-path dependencies, resource folders, and Gradle subprojects
-- `issues` and `recommendations`: concise details for action
-
-Java versions below JDK 8 are flagged with `NEEDS_CHANGES` and a recommendation to move to at least Java 8. The analyzer does not flag Java 11 solely because a former default target was Java 21.
-
-## Version resolution
-
-For Maven projects, the scanner uses `mvn dependency:tree` to read the resolved dependency versions. It also invokes Maven Versions Plugin reporting goals to find newer dependency and parent versions, including versions inherited through dependency management or a Spring Boot BOM. A report goal checks versions only; the analyzer does not start the app or run tests.
-
-Maven Central metadata is queried as an additional source. A dependency is listed as needing an update only when the scanner can establish a newer version. Frameworks that are already current are omitted. The old redundant `versions` array is not included in framework entries.
-
-If a tool/repository check cannot establish newer versions, the script does not invent a recommended version. A missing Maven/Gradle dependency version is reported as unresolved when applicable.
-
-## Excluded
-
-- Application runtime / health checks
-- Build and test validation
-- Vulnerability and EOL scans
-- Migration readiness scores or migration plans
-- Automatic source-code changes
-
-No third-party Python packages are required. Maven or Gradle is used only to read dependency trees/version metadata.
+The auditor is an analysis tool. It does **not** start the application, run tests, automatically modify source code, or claim that a migration will compile successfully without a real build/test validation.
