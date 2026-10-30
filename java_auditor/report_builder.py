@@ -6,11 +6,14 @@ from datetime import datetime
 from pathlib import Path
 
 from .build_files import read_ant, read_gradle, read_pom
-from .config import AUDITOR_VERSION, BUILD_NAMES, MINIMUM_JAVA_VERSION, SETTINGS_NAMES
+from .config import AUDITOR_VERSION, BUILD_NAMES, MINIMUM_JAVA_VERSION, SETTINGS_NAMES, TARGET_JAVA
+from .migration import build_migration
+from .source_api_scanner import scan_project_apis
 from .dependency_resolver import merge_dependencies, resolve_dependency_tree, resolve_maven_updates
 from .project_scanner import detect_missing_gradle_modules, scan_deprecated_apis
 from .utils import find_files, java_major, progress, rel, version_sort_key, version_tuple
 from .version_checker import fetch_metadata_for, identify_frameworks, version_advice
+
 
 def choose_java(info):
     versions = [item for item in info.get("java_versions", []) if item.get("version")]
@@ -20,7 +23,7 @@ def choose_java(info):
     return distinct[0] if len(distinct) == 1 else "Multiple"
 
 
-def build_report(project_path):
+def build_report(project_path, target_java=TARGET_JAVA):
     root = Path(project_path).expanduser().resolve()
     if not root.exists() or not root.is_dir():
         raise ValueError(f"Project path must be an existing directory: {root}")
@@ -125,7 +128,6 @@ def build_report(project_path):
     metadata_cache = fetch_metadata_for(metadata_coordinates)
     progress("Version metadata lookup finished.")
 
-    # Merge Maven's repository-aware update candidates when direct Python HTTP lookups fail.
     for update_data in maven_update_records:
         for coordinate, candidate_data in update_data.items():
             existing = metadata_cache.get(coordinate, {"versions": [], "status": "UNAVAILABLE"})
@@ -165,6 +167,7 @@ def build_report(project_path):
         framework_unique[(item["name"], item.get("module"), item["version"])] = item
     frameworks = sorted(framework_unique.values(), key=lambda x: (x["name"], str(x.get("module")), str(x.get("version"))))
     frameworks_detected_count = len(frameworks)
+    frameworks_reported_count = len(frameworks)
 
     java_versions = [m["java_version"] for m in module_details if m["java_version"] not in {"Not detected", "Multiple"}]
     current_java = "Multiple" if any(m["java_version"] == "Multiple" for m in module_details) or len(set(java_versions)) > 1 else (java_versions[0] if java_versions else "Not detected")
@@ -200,12 +203,6 @@ def build_report(project_path):
                 "path": framework.get("source"),
                 "message": framework["change_reason"],
             })
-
-    # Only show frameworks with a confirmed update or a known compatibility change.
-    frameworks = [
-        item for item in frameworks
-        if item.get("version_status") in {"NEEDS_UPDATE", "MAJOR_UPDATE_AVAILABLE", "NEEDS_CHANGES"}
-    ]
 
     progress("Scanning Java source for selected deprecated API patterns...")
     issues.extend(scan_deprecated_apis(root))
@@ -268,6 +265,39 @@ def build_report(project_path):
     issues.sort(key=lambda x: (severity_rank.get(x.get("severity"), 3), x.get("title", ""), x.get("path") or ""))
     recommendations.sort(key=lambda x: (str(x.get("module")), x["component"]))
 
+    progress("Running rule-based API scan and building the migration plan...")
+    api_findings, api_scan = scan_project_apis(root, target_java)
+    java_gap = None
+    for module in module_details:
+        detected = java_major(module["java_version"]) if module["java_version"] not in {"Not detected", "Multiple"} else None
+        if detected and detected.isdigit() and int(detected) < target_java:
+            java_gap = {"current": detected, "target": str(target_java)}
+            break
+
+    outdated = [
+        {
+            "name": f"{d['group_id']}:{d['artifact_id']}",
+            "current": d.get("version"),
+            "recommended": d.get("recommended_version"),
+            "kind": "OUTDATED",
+            "requires_jakarta": False,
+        }
+        for d in dependencies
+        if d.get("version_status") in {"NEEDS_UPDATE", "MAJOR_UPDATE_AVAILABLE"}
+    ]
+    outdated += [
+        {
+            "name": f["name"],
+            "current": f["version"],
+            "recommended": f.get("recommended_version"),
+            "kind": "NEEDS_CHANGES" if f.get("version_status") == "NEEDS_CHANGES" else "OUTDATED",
+            "requires_jakarta": False,
+        }
+        for f in frameworks
+        if f.get("version_status") in {"NEEDS_UPDATE", "MAJOR_UPDATE_AVAILABLE", "NEEDS_CHANGES"}
+    ]
+    migration = build_migration(target_java, api_findings, missing_files, [], [], outdated, [], java_gap)
+
     return {
         "auditor_version": AUDITOR_VERSION,
         "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
@@ -276,6 +306,7 @@ def build_report(project_path):
         "build_system": build_system,
         "current_java": current_java,
         "minimum_java": MINIMUM_JAVA_VERSION,
+        "target_java": str(target_java),
         "scan_summary": {
             "build_files_found": len(build_files),
             "modules_analyzed": len(module_details),
@@ -285,8 +316,12 @@ def build_report(project_path):
                 if dep.get("version_status") in {"NEEDS_UPDATE", "MAJOR_UPDATE_AVAILABLE"}
             ),
             "dependency_status_counts": dict(sorted(dependency_status_counts.items())),
-            "frameworks_detected_before_update_filter": frameworks_detected_count,
-            "framework_updates_reported": len(frameworks),
+            "frameworks_detected": frameworks_detected_count,
+            "frameworks_reported": frameworks_reported_count,
+            "framework_updates_reported": sum(
+                1 for framework in frameworks
+                if framework.get("version_status") in {"NEEDS_UPDATE", "MAJOR_UPDATE_AVAILABLE", "NEEDS_CHANGES"}
+            ),
             "missing_references_found": len(missing_files),
             "dependency_resolution_diagnostics": resolution_notes,
         },
@@ -305,15 +340,19 @@ def build_report(project_path):
                 "version_status": d.get("version_status") or "CHECK_UNAVAILABLE",
             }
             for d in sorted(
-                [d for d in dependencies if d.get("version_status") in {"NEEDS_UPDATE", "MAJOR_UPDATE_AVAILABLE"}],
+                dependencies,
                 key=lambda x: (str(x.get("module")), x["group_id"], x["artifact_id"], str(x.get("version")))
             )
         ],
         "missing_files": missing_files,
+        "api_findings": api_findings,
+        "api_scan": api_scan,
         "issues": issues,
         "recommendations": recommendations,
+        "migration": migration,
         "analysis_notes": [
             "No application runtime checks or build/test validation are performed.",
-            "Latest/recommended versions use Maven Central metadata with Maven Versions Plugin fallback; a component is listed for updating only when a newer release is established.",
+            "All detected dependencies and frameworks are retained in the report even when version metadata is unavailable; CHECK_UNAVAILABLE means the component was found but its remote version check could not be completed.",
+            "Latest/recommended versions use Maven Central metadata with Maven Versions Plugin fallback; update recommendations are emitted only when a newer release is established.",
         ] + ([f"Dependency/version checks were incomplete for {len(resolution_notes)} module(s); see Issues for the diagnostic."] if resolution_notes else []),
     }
