@@ -1,0 +1,22 @@
+{
+  "description": "javax.* to jakarta.* namespace moves (Jakarta EE 9+)",
+  "requiredBy": "Spring Boot 3, Spring Framework 6, Tomcat 10+, Hibernate 6",
+  "severity": "BLOCKER",
+  "mappings": [
+    {"from": "javax/servlet/", "to": "jakarta/servlet/"},
+    {"from": "javax/persistence/", "to": "jakarta/persistence/"},
+    {"from": "javax/validation/", "to": "jakarta/validation/"},
+    {"from": "javax/ws/rs/", "to": "jakarta/ws/rs/"},
+    {"from": "javax/inject/", "to": "jakarta/inject/"},
+    {"from": "javax/transaction/", "to": "jakarta/transaction/"},
+    {"from": "javax/jms/", "to": "jakarta/jms/"},
+    {"from": "javax/mail/", "to": "jakarta/mail/"},
+    {"from": "javax/ejb/", "to": "jakarta/ejb/"},
+    {"from": "javax/enterprise/", "to": "jakarta/enterprise/"},
+    {"from": "javax/faces/", "to": "jakarta/faces/"},
+    {"from": "javax/websocket/", "to": "jakarta/websocket/"},
+    {"from": "javax/json/", "to": "jakarta/json/"},
+    {"from": "javax/el/", "to": "jakarta/el/"},
+    {"from": "javax/jws/", "to": "jakarta/jws/"}
+  ]
+}
