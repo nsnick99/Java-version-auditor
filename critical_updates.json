@@ -1,0 +1,96 @@
+{
+  "report_type": "critical_updates_only",
+  "project_name": "Java_Full_Stack_Project",
+  "build_system": "Maven",
+  "migration": {
+    "current_java": "11",
+    "target_java": "21"
+  },
+  "purpose": "Action-focused migration report containing only build blockers and dependencies/frameworks that may require source or configuration changes. Routine dependency updates are excluded.",
+  "build_blockers": [
+    {
+      "component": "Java",
+      "severity": "CRITICAL",
+      "build_failure_risk": true,
+      "current_version": "11",
+      "target_version": "21",
+      "action": "Update Maven compiler/source/target configuration to Java 21 and scan source for removed or incompatible JDK APIs."
+    }
+  ],
+  "framework_migrations": [
+    {
+      "component": "Spring Boot",
+      "current_version": "2.7.5",
+      "recommended_stabilization": "2.7.18",
+      "target_family": "3.x",
+      "severity": "CRITICAL",
+      "build_failure_risk": true,
+      "source_changes_required": true,
+      "reason": "Spring Boot 3 requires the Jakarta ecosystem and introduces framework/API migration changes.",
+      "action": "For an incremental migration, first stabilize on 2.7.18. For the Java 21 modernization, migrate to a compatible Spring Boot 3.x release and address Jakarta/API changes."
+    },
+    {
+      "component": "Spring Security",
+      "current_version": "5.7.4",
+      "recommended_version": "5.8.16",
+      "target_family": "6.x/compatible with selected Spring Boot 3.x",
+      "severity": "CRITICAL",
+      "build_failure_risk": true,
+      "source_changes_required": true,
+      "reason": "Major Spring Security generations change security configuration APIs.",
+      "action": "Align Spring Security with the selected Spring Boot version and scan/update deprecated security configuration such as WebSecurityConfigurerAdapter and older authorization APIs."
+    },
+    {
+      "component": "Spring Framework / Spring MVC",
+      "current_version": "5.3.23",
+      "recommended_version": "5.3.39",
+      "target_family": "6.x/compatible with selected Spring Boot 3.x",
+      "severity": "CRITICAL",
+      "build_failure_risk": true,
+      "source_changes_required": true,
+      "reason": "Spring Framework major-version migration must remain aligned with Spring Boot rather than independently selecting the newest repository version.",
+      "action": "Upgrade through the Spring Boot-managed dependency set and resolve affected Spring API/configuration changes."
+    }
+  ],
+  "critical_dependencies": [
+    {
+      "name": "jakarta.persistence:jakarta.persistence-api",
+      "current_version": "2.2.3",
+      "reported_latest": "4.0.0-M2",
+      "severity": "CRITICAL",
+      "build_failure_risk": true,
+      "source_changes_required": true,
+      "reason": "The persistence API generation changes with the Spring Boot 3/Jakarta migration.",
+      "action": "Do not blindly upgrade to the reported latest version. Align JPA with the selected Spring Boot/Hibernate stack and update affected persistence APIs/imports."
+    },
+    {
+      "name": "io.jsonwebtoken:jjwt",
+      "current_version": "0.9.1",
+      "recommended_version": "0.13.0",
+      "severity": "CRITICAL",
+      "build_failure_risk": true,
+      "source_changes_required": true,
+      "reason": "The version gap includes JWT API changes that can break existing authentication/token parsing code.",
+      "action": "Upgrade JJWT together with the required JWT parser/signing API changes and compile-test authentication code."
+    }
+  ],
+  "namespace_migrations": [
+    {
+      "from": "javax.*",
+      "to": "jakarta.*",
+      "severity": "CRITICAL",
+      "build_failure_risk": true,
+      "source_changes_required": true,
+      "reason": "Spring Boot 3 and the Jakarta ecosystem replace affected Java EE javax namespaces.",
+      "action": "Scan Java source and update affected imports/APIs such as javax.persistence, javax.servlet, javax.validation, javax.annotation and javax.transaction."
+    }
+  ],
+  "summary": {
+    "critical_items": 6,
+    "critical_dependencies": 2,
+    "framework_migrations": 3,
+    "namespace_migrations": 1,
+    "routine_dependency_updates_excluded": true,
+    "full_dependency_count_in_output_json": 112
+  }
+}
