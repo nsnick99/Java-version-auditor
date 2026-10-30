@@ -18,6 +18,26 @@ python auditor.py "C:\Users\YourName\Desktop\Java-test"
 
 The report is written beside `auditor.py`, not inside the scanned project.
 
+### Audit modes
+
+The default mode is **fast**. It uses short network/tool timeouts and skips the Maven Versions Plugin fallback, which is often the slowest part of a large Maven scan. Maven/Gradle dependency-tree resolution is still attempted when the project provides an executable or wrapper.
+
+```powershell
+# Fast/default mode
+python auditor.py "C:\Projects\MyJavaApp"
+
+# Explicit target Java
+python auditor.py "C:\Projects\MyJavaApp" --target-java 21
+
+# Deep mode: allows longer Maven/Gradle operations and Maven version-plugin fallback
+python auditor.py "C:\Projects\MyJavaApp" --target-java 21 --deep
+
+# Offline mode: no Maven Central/network metadata lookups
+python auditor.py "C:\Projects\MyJavaApp" --offline
+```
+
+If Maven Central or a build tool is unreachable, the auditor records the limitation instead of waiting indefinitely. Use `--deep` only when you specifically want the additional Maven version-plugin fallback.
+
 ## What it checks
 
 ### Project directories
@@ -27,6 +47,7 @@ The report is written beside `auditor.py`, not inside the scanned project.
 - Missing declared modules/files
 - Selected deprecated API usage
 - Framework compatibility recommendations
+- Requested target-Java compatibility
 
 ### WAR/JAR/EAR/ZIP packages
 - Compiled Java class versions
@@ -44,7 +65,7 @@ The report is written beside `auditor.py`, not inside the scanned project.
 ## Code structure
 
 - `auditor.py` — command-line entry point
-- `java_auditor/cli.py` — argument handling and JSON output
+- `java_auditor/cli.py` — argument handling, timeout modes and JSON output
 - `java_auditor/config.py` — target Java and detection rules
 - `java_auditor/build_files.py` — project build-file parsing
 - `java_auditor/dependency_resolver.py` — Maven/Gradle dependency resolution
