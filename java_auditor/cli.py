@@ -64,38 +64,6 @@ def _configure_runtime(deep, offline):
     return dependency_resolver
 
 
-def _apply_source_target(report, target):
-    """Add target-Java compatibility findings to directory-mode reports."""
-    report["target_java"] = str(target)
-    current = report.get("current_java")
-    if not current or not str(current).isdigit():
-        return report
-    current_int = int(current)
-    if current_int >= target:
-        return report
-
-    message = f"Project targets Java {current_int}; requested target is Java {target}."
-    report.setdefault("issues", []).append({
-        "title": "Java target upgrade required",
-        "severity": "HIGH",
-        "status": "NEEDS_CHANGES",
-        "path": report.get("project_path"),
-        "current_version": str(current_int),
-        "recommended_version": str(target),
-        "message": message,
-    })
-    report.setdefault("recommendations", []).append({
-        "component": "Java",
-        "module": ".",
-        "current_version": str(current_int),
-        "recommended_version": str(target),
-        "version_status": "NEEDS_CHANGES",
-        "reason": message,
-    })
-    report.setdefault("scan_summary", {})["target_java"] = str(target)
-    return report
-
-
 def main():
     try:
         path, target, deep, offline = _parse_args(sys.argv[1:])
@@ -117,14 +85,11 @@ def main():
             report = artifact_report.build_artifact_report(path, target)
         else:
             import java_auditor.report_builder as report_builder
-            # The source report builder accepts the project path only. The old CLI
-            # passed target as a second argument, which caused a TypeError.
             if not deep:
                 report_builder.resolve_maven_updates = lambda info, root: ({}, None)
             if offline:
                 report_builder.fetch_metadata_for = lambda coords: {}
-            report = report_builder.build_report(path)
-            report = _apply_source_target(report, target)
+            report = report_builder.build_report(path, target)
     except Exception as exc:
         print(f"Audit failed: {exc}", file=sys.stderr)
         raise SystemExit(1)
