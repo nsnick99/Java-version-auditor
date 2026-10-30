@@ -32,9 +32,33 @@ python auditor.py "C:\Projects\MyJavaApp" --target-java 21
 # Deep mode: allows longer Maven/Gradle operations and Maven version-plugin fallback
 python auditor.py "C:\Projects\MyJavaApp" --target-java 21 --deep
 
-# Offline mode: no Maven Central/network metadata lookups
+# Air-gapped/offline mode
 python auditor.py "C:\Projects\MyJavaApp" --offline
 ```
+
+## Air-gapped Maven support
+
+The auditor supports an internal Maven/Nexus/Artifactory repository. If the repository contains an `internal-maven` configuration file with a Maven `<url>`, that repository is used for dependency metadata instead of Maven Central.
+
+The current repository contains:
+
+```text
+http://10.0.16.236:8081/repository/maven-public
+```
+
+In an air-gapped environment, use:
+
+```powershell
+python auditor.py "C:\Projects\MyJavaApp" --offline
+```
+
+The lookup order is:
+
+1. Configured internal Maven repository
+2. No public Maven Central lookup in offline mode
+3. `CHECK_UNAVAILABLE` only when metadata cannot be obtained from the configured source
+
+This keeps dependency/framework version analysis usable inside the internal network without requiring internet access.
 
 If Maven Central or a build tool is unreachable, the auditor records the limitation instead of waiting indefinitely. Use `--deep` only when you specifically want the additional Maven version-plugin fallback.
 
@@ -65,10 +89,12 @@ If Maven Central or a build tool is unreachable, the auditor records the limitat
 ## Code structure
 
 - `auditor.py` — command-line entry point
-- `java_auditor/cli.py` — argument handling, timeout modes and JSON output
+- `internal-maven` — internal Maven repository configuration
+- `java_auditor/cli.py` — argument handling, repository routing, timeout modes and JSON output
 - `java_auditor/config.py` — target Java and detection rules
 - `java_auditor/build_files.py` — project build-file parsing
 - `java_auditor/dependency_resolver.py` — Maven/Gradle dependency resolution
+- `java_auditor/internal_maven.py` — internal Maven metadata lookup
 - `java_auditor/version_checker.py` — version metadata and upgrade advice
 - `java_auditor/project_scanner.py` — project completeness/deprecated API checks
 - `java_auditor/report_builder.py` — project-directory report orchestration
