@@ -138,6 +138,9 @@ def main():
             if offline and not _read_internal_maven_url(path):
                 report_builder.fetch_metadata_for = lambda coords: {}
             report = report_builder.build_report(path, target)
+            # Optional inventory only. It does not alter Java migration analysis.
+            from .environment_detector import detect_environment
+            report["project_environment"] = detect_environment(path)
     except Exception as exc:
         print(f"Audit failed: {exc}", file=sys.stderr)
         raise SystemExit(1)
