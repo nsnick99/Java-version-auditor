@@ -20,7 +20,7 @@ The report is written beside `auditor.py`, not inside the scanned project.
 
 ### Audit modes
 
-The default mode is **fast**. It uses short network/tool timeouts and skips the Maven Versions Plugin fallback, which is often the slowest part of a large Maven scan. Maven/Gradle dependency-tree resolution is still attempted when the project provides an executable or wrapper.
+The default mode is **fast**. It uses bounded network/tool timeouts and skips the Maven Versions Plugin fallback, which is often the slowest part of a large Maven scan.
 
 ```powershell
 # Fast/default mode
@@ -32,9 +32,19 @@ python auditor.py "C:\Projects\MyJavaApp" --target-java 21
 # Deep mode: allows longer Maven/Gradle operations and Maven version-plugin fallback
 python auditor.py "C:\Projects\MyJavaApp" --target-java 21 --deep
 
-# Air-gapped/offline mode
+# Strict offline mode: no repository/network access and no Maven/Gradle network resolution
 python auditor.py "C:\Projects\MyJavaApp" --offline
 ```
+
+### Resolution modes
+
+The auditor automatically selects the resolution source:
+
+1. **Internal** — if the `internal-maven` configuration contains a repository URL, dependency/framework metadata is read from that repository. Maven/Gradle dependency-tree execution is not used, so an air-gapped scan does not hang on plugin or transitive-resolution timeouts.
+2. **Offline** — `--offline` disables repository access and uses only information already present in the build files/local analysis. Missing information is reported as unavailable rather than being guessed.
+3. **Normal** — when no internal repository is configured, Maven/Gradle resolution and Maven metadata lookup are used according to the selected fast/deep mode.
+
+The report contains a `resolution` object showing which mode was actually used.
 
 ## Air-gapped Maven support
 
@@ -46,21 +56,15 @@ The current repository contains:
 http://10.0.16.236:8081/repository/maven-public
 ```
 
-In an air-gapped environment, use:
+For an internal-network scan, run normally:
 
 ```powershell
-python auditor.py "C:\Projects\MyJavaApp" --offline
+python auditor.py "C:\Projects\MyJavaApp"
 ```
 
-The lookup order is:
+Do **not** add `--offline` when you want the internal repository queried; `--offline` intentionally disables all repository access.
 
-1. Configured internal Maven repository
-2. No public Maven Central lookup in offline mode
-3. `CHECK_UNAVAILABLE` only when metadata cannot be obtained from the configured source
-
-This keeps dependency/framework version analysis usable inside the internal network without requiring internet access.
-
-If Maven Central or a build tool is unreachable, the auditor records the limitation instead of waiting indefinitely. Use `--deep` only when you specifically want the additional Maven version-plugin fallback.
+Internal Maven results distinguish `FOUND`, `NOT_FOUND`, `AUTH_REQUIRED`, `TIMEOUT`, `INVALID_METADATA`, `UNAVAILABLE`, and `NO_STABLE_RELEASE` instead of collapsing all failures into one unresolved status.
 
 ## What it checks
 
@@ -68,6 +72,7 @@ If Maven Central or a build tool is unreachable, the auditor records the limitat
 - Java/build versions and module inventory
 - Maven, Gradle and Ant build files
 - Dependency versions and available updates
+- Inherited Spring Boot dependency versions
 - Missing declared modules/files
 - Selected deprecated API usage
 - Framework compatibility recommendations
@@ -91,11 +96,11 @@ If Maven Central or a build tool is unreachable, the auditor records the limitat
 - `auditor.py` — command-line entry point
 - `internal-maven` — internal Maven repository configuration
 - `java_auditor/cli.py` — argument handling, repository routing, timeout modes and JSON output
-- `java_auditor/config.py` — target Java and detection rules
-- `java_auditor/build_files.py` — project build-file parsing
-- `java_auditor/dependency_resolver.py` — Maven/Gradle dependency resolution
-- `java_auditor/internal_maven.py` — internal Maven metadata lookup
-- `java_auditor/version_checker.py` — version metadata and upgrade advice
+- `java_auditor/config.py` — target Java, timeout and detection rules
+- `java_auditor/build_files.py` — project build-file parsing and inherited version handling
+- `java_auditor/dependency_resolver.py` — Maven/Gradle dependency resolution and internal/offline routing
+- `java_auditor/internal_maven.py` — internal Maven metadata lookup and diagnostics
+- `java_auditor/version_checker.py` — version metadata and stable upgrade advice
 - `java_auditor/project_scanner.py` — project completeness/deprecated API checks
 - `java_auditor/report_builder.py` — project-directory report orchestration
 - `java_auditor/artifact_report.py` — packaged-application report orchestration
@@ -107,7 +112,7 @@ If Maven Central or a build tool is unreachable, the auditor records the limitat
 - `java_auditor/migration.py` — readiness score and ordered migration plan
 - `java_auditor/rules/*.json` — data-driven compatibility and library rules
 
-No third-party Python packages are required. Maven or Gradle is used only when available for project dependency/version information; packaged-application mode can operate without them.
+No third-party Python packages are required. Maven or Gradle is used only when available and appropriate for normal-mode project dependency/version information; packaged-application mode can operate without them.
 
 ## Important limitation
 
