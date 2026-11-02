@@ -45,14 +45,14 @@ def _parse_args(argv):
         path_value = arg
         index += 1
     if path_value is None:
-        raise ValueError("A project or packaged artifact path is required")
+        raise ValueError("A project or artifact path is required")
     if not 1 <= target <= 99:
         raise ValueError("Target Java version must be between 1 and 99")
     return Path(path_value).expanduser(), target, deep, offline
 
 
 def _read_internal_maven_url(project_path):
-    """Read the repository URL from the repo-root internal-maven config."""
+    """Read the repository URL from the project or auditor repo config."""
     candidates = []
     if project_path.is_dir():
         candidates.append(project_path / "internal-maven")
@@ -68,42 +68,31 @@ def _read_internal_maven_url(project_path):
 
 
 def _configure_runtime(deep, offline, project_path):
-    """Configure bounded work and route metadata through internal Maven when configured."""
+    """Configure bounded work and choose normal, internal, or offline resolution."""
     import java_auditor.dependency_resolver as dependency_resolver
     import java_auditor.version_checker as version_checker
 
     dependency_resolver.TOOL_TIMEOUT = TOOL_TIMEOUT if deep else min(20, TOOL_TIMEOUT)
-    version_checker.HTTP_TIMEOUT = HTTP_TIMEOUT if deep else min(2, HTTP_TIMEOUT)
+    version_checker.HTTP_TIMEOUT = HTTP_TIMEOUT if deep else min(5, HTTP_TIMEOUT)
 
     internal_url = _read_internal_maven_url(project_path)
-    if internal_url and not offline:
-        from .internal_maven import maven_metadata
-        version_checker.maven_metadata = lambda group, artifact: maven_metadata(group, artifact, internal_url)
-        progress(f"Maven metadata source: internal repository {internal_url}")
-    elif internal_url and offline:
-        progress("Maven metadata source: internal repository configured, offline mode enabled")
-
     if offline:
-        if internal_url:
-            from .internal_maven import maven_metadata
-            version_checker.maven_metadata = lambda group, artifact: maven_metadata(group, artifact, internal_url)
-            version_checker.fetch_metadata_for = _internal_fetch(version_checker, internal_url)
-        else:
-            version_checker.fetch_metadata_for = lambda coords: {}
+        dependency_resolver.RESOLUTION_MODE = "offline"
+        dependency_resolver.INTERNAL_MAVEN_URL = None
+        version_checker.fetch_metadata_for = lambda coords: {}
+        progress("Resolution mode: offline (no repository/network access)")
+    elif internal_url:
+        from .internal_maven import maven_metadata
+        dependency_resolver.RESOLUTION_MODE = "internal"
+        dependency_resolver.INTERNAL_MAVEN_URL = internal_url
+        version_checker.maven_metadata = lambda group, artifact: maven_metadata(group, artifact, internal_url)
+        progress(f"Resolution mode: internal Maven ({internal_url})")
+    else:
+        dependency_resolver.RESOLUTION_MODE = "normal"
+        dependency_resolver.INTERNAL_MAVEN_URL = None
+        progress("Resolution mode: normal (network enabled)")
 
     return dependency_resolver
-
-
-def _internal_fetch(version_checker, internal_url):
-    def fetch(coords):
-        cache = {}
-        for group, artifact in sorted(set(coords)):
-            try:
-                cache[(group, artifact)] = version_checker.maven_metadata(group, artifact)
-            except Exception:
-                cache[(group, artifact)] = {"status": "UNAVAILABLE", "versions": []}
-        return cache
-    return fetch
 
 
 def _write_json(path, data):
@@ -121,26 +110,33 @@ def main():
         raise SystemExit(2)
 
     try:
-        _configure_runtime(deep, offline, path)
+        dependency_resolver = _configure_runtime(deep, offline, path)
+        resolution_mode = dependency_resolver.RESOLUTION_MODE
         progress(
             f"Starting audit for {path} (target Java {target}; "
-            f"{'deep' if deep else 'fast'} mode; {'offline' if offline else 'network enabled'})"
+            f"{'deep' if deep else 'fast'} mode; resolution={resolution_mode})"
         )
         if path.is_file() and path.suffix.lower() in ARTIFACT_EXTENSIONS:
             import java_auditor.artifact_report as artifact_report
-            if offline and not _read_internal_maven_url(path):
+            if offline:
                 artifact_report.fetch_metadata_for = lambda coords: {}
             report = artifact_report.build_artifact_report(path, target)
         else:
             import java_auditor.report_builder as report_builder
             if not deep:
                 report_builder.resolve_maven_updates = lambda info, root: ({}, None)
-            if offline and not _read_internal_maven_url(path):
+            if offline:
                 report_builder.fetch_metadata_for = lambda coords: {}
             report = report_builder.build_report(path, target)
-            # Optional inventory only. It does not alter Java migration analysis.
             from .environment_detector import detect_environment
             report["project_environment"] = detect_environment(path)
+
+        report["resolution"] = {
+            "mode": resolution_mode,
+            "internal_maven_configured": bool(dependency_resolver.INTERNAL_MAVEN_URL),
+            "internal_maven_url": dependency_resolver.INTERNAL_MAVEN_URL,
+            "build_tool_resolution": "declarations_and_internal_metadata" if resolution_mode == "internal" else ("local_only" if resolution_mode == "offline" else "maven_gradle_plus_metadata"),
+        }
     except Exception as exc:
         print(f"Audit failed: {exc}", file=sys.stderr)
         raise SystemExit(1)
