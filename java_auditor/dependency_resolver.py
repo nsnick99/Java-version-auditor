@@ -5,13 +5,10 @@ from __future__ import annotations
 import re
 
 from .config import PLACEHOLDER_START, PRE_RELEASE, TOOL_TIMEOUT
-from .utils import (
-    clean, executable_or_wrapper, progress, rel, run_command,
-    version_sort_key, version_tuple,
-)
+from .utils import executable_or_wrapper, progress, rel, run_command, version_sort_key, version_tuple
 
-# Runtime-configured by the CLI. Internal mode intentionally avoids expensive
-# Maven/Gradle network resolution and uses parsed declarations + internal metadata.
+# Runtime-configured by the CLI. Internal/offline modes intentionally avoid
+# expensive Maven/Gradle resolution and use parsed declarations instead.
 RESOLUTION_MODE = "normal"
 INTERNAL_MAVEN_URL = None
 
@@ -35,11 +32,7 @@ def parse_maven_tree(output, info, root):
         g, a, v, scope = match.group("group", "artifact", "version", "scope")
         if (g, a) == project_coords[:2] or not v or PLACEHOLDER_START in v:
             continue
-        found.append({
-            "group_id": g, "artifact_id": a, "version": v, "scope": scope,
-            "direct": False, "version_source": "resolved Maven dependency tree",
-            "module": rel(info["path"].parent, root), "source": rel(info["path"], root),
-        })
+        found.append({"group_id": g, "artifact_id": a, "version": v, "scope": scope, "direct": False, "version_source": "resolved Maven dependency tree", "module": rel(info["path"].parent, root), "source": rel(info["path"], root)})
     return found
 
 
@@ -57,21 +50,13 @@ def parse_gradle_tree(output, info, root):
             version = arrow.group(1)
         if version in {"unspecified", "FAILED"} or PLACEHOLDER_START in version:
             continue
-        found.append({
-            "group_id": g, "artifact_id": a, "version": version, "scope": "runtimeClasspath",
-            "direct": False, "version_source": "resolved Gradle dependency report",
-            "module": rel(info["path"].parent, root), "source": rel(info["path"], root),
-        })
+        found.append({"group_id": g, "artifact_id": a, "version": version, "scope": "runtimeClasspath", "direct": False, "version_source": "resolved Gradle dependency report", "module": rel(info["path"].parent, root), "source": rel(info["path"], root)})
     return found
 
 
 def parse_versions_plugin_output(output):
-    """Parse current -> available versions from Maven Versions Plugin output."""
     ansi = re.compile(r"\x1b\[[0-9;]*m")
-    line_pattern = re.compile(
-        r"(?P<coordinate>[A-Za-z0-9_.-]+:[A-Za-z0-9_.-]+)\s+\.{2,}\s+"
-        r"(?P<current>\S+)\s*->\s*(?P<available>.+?)\s*$"
-    )
+    line_pattern = re.compile(r"(?P<coordinate>[A-Za-z0-9_.-]+:[A-Za-z0-9_.-]+)\s+\.{2,}\s+(?P<current>\S+)\s*->\s*(?P<available>.+?)\s*$")
     updates = {}
     for raw_line in output.splitlines():
         line = ansi.sub("", raw_line).strip()
@@ -96,21 +81,14 @@ def parse_versions_plugin_output(output):
 
 
 def resolve_maven_updates(info, root):
-    """Use Maven's Versions Plugin as a fallback for release-version lookup."""
-    if RESOLUTION_MODE == "internal":
+    """Use Maven's Versions Plugin only in normal/deep resolution mode."""
+    if RESOLUTION_MODE != "normal":
         return {}, None
     launcher = executable_or_wrapper(root, "mvn", info["path"].parent)
     if not launcher:
-        return {}, "Maven executable or wrapper not found for version lookup"
-
+        return {}, "Maven executable or Maven wrapper not found for version lookup"
     plugin_version = "2.21.0"
-    command = launcher + [
-        "-B", "-f", str(info["path"].resolve()),
-        "-Dstyle.color=never", "-Dversions.showNewestPerSegment=true",
-        "-DshowVersionless=true", "-Dverbose=false",
-        f"org.codehaus.mojo:versions-maven-plugin:{plugin_version}:display-dependency-updates",
-        f"org.codehaus.mojo:versions-maven-plugin:{plugin_version}:display-parent-updates",
-    ]
+    command = launcher + ["-B", "-f", str(info["path"].resolve()), "-Dstyle.color=never", "-Dversions.showNewestPerSegment=true", "-DshowVersionless=true", "-Dverbose=false", f"org.codehaus.mojo:versions-maven-plugin:{plugin_version}:display-dependency-updates", f"org.codehaus.mojo:versions-maven-plugin:{plugin_version}:display-parent-updates"]
     progress(f"Running Maven Versions Plugin for {rel(info['path'], root)} (timeout: {TOOL_TIMEOUT}s)...")
     code, stdout, stderr = run_command(command, root, TOOL_TIMEOUT)
     parsed = parse_versions_plugin_output((stdout or "") + "\n" + (stderr or ""))
@@ -123,7 +101,6 @@ def resolve_maven_updates(info, root):
 
 
 def _declaration_resolution(info, root):
-    """Use already-parsed build declarations without invoking Maven/Gradle."""
     resolved = []
     for dep in info.get("direct_dependencies", []):
         item = dict(dep)
@@ -134,11 +111,7 @@ def _declaration_resolution(info, root):
 
 
 def resolve_dependency_tree(info, root):
-    # Internal mode is intentionally deterministic: repository metadata is queried
-    # separately, while Maven/Gradle are not allowed to trigger public-network or
-    # wrapper/plugin resolution. This prevents false VERSION_UNRESOLVED results
-    # caused by build-tool timeouts in air-gapped environments.
-    if RESOLUTION_MODE == "internal":
+    if RESOLUTION_MODE in {"internal", "offline"}:
         return _declaration_resolution(info, root), None
 
     system = info.get("build_system")
