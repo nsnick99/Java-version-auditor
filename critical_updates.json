@@ -1,7 +1,7 @@
 {
   "report_type": "critical_migration_only",
   "auditor_version": "4.1",
-  "generated_at": "2026-11-02T09:46:07+00:00",
+  "generated_at": "2026-11-02T09:50:02+00:00",
   "project_name": "gs-rest-service",
   "build_system": "Multiple",
   "current_java": "17",
