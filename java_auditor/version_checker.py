@@ -11,6 +11,7 @@ import xml.etree.ElementTree as ET
 from .config import FRAMEWORK_RULES, HTTP_TIMEOUT, PRE_RELEASE, USER_AGENT
 from .utils import child, compare_versions, node_text, rel, version_sort_key, version_tuple
 
+
 def maven_metadata(group, artifact):
     path = "/".join(urllib.parse.quote(piece, safe="") for piece in group.split("."))
     artifact_path = urllib.parse.quote(artifact, safe="")
@@ -23,35 +24,44 @@ def maven_metadata(group, artifact):
         versioning = child(root, "versioning")
         version_node = child(versioning, "versions")
         versions = [(x.text or "").strip() for x in list(version_node or []) if x.text]
-        stable = sorted({v for v in versions if not PRE_RELEASE.search(v)}, key=version_sort_key)
+        stable = sorted({v for v in versions if version_tuple(v) and not PRE_RELEASE.search(v)}, key=version_sort_key)
         if not stable:
             release = node_text(versioning, "release")
-            stable = [release] if release and not PRE_RELEASE.search(release) else []
+            stable = [release] if release and version_tuple(release) and not PRE_RELEASE.search(release) else []
         return {"status": "FOUND", "versions": stable, "latest_version": stable[-1], "source": url} if stable else {"status": "NO_STABLE_RELEASE", "versions": [], "source": url}
     except urllib.error.HTTPError as exc:
         return {"status": "NOT_FOUND" if exc.code == 404 else "UNAVAILABLE", "versions": [], "source": url}
+    except TimeoutError as exc:
+        return {"status": "TIMEOUT", "versions": [], "source": url, "message": str(exc)[:140]}
     except Exception as exc:
         return {"status": "UNAVAILABLE", "versions": [], "source": url, "message": str(exc)[:140]}
 
 
 def version_advice(current, metadata):
+    """Classify an update using stable releases only.
+
+    The newest available release is informational. A same-major stable release is
+    preferred as the default recommendation; a newer major is never silently
+    presented as a routine update.
+    """
     versions = list(metadata.get("versions", []) or [])
     metadata_latest = metadata.get("latest_version")
     if metadata_latest and metadata_latest not in versions:
         versions.append(metadata_latest)
-    versions = sorted({v for v in versions if version_tuple(v)}, key=version_sort_key)
+    versions = sorted({v for v in versions if version_tuple(v) and not PRE_RELEASE.search(v)}, key=version_sort_key)
 
     if not current or not version_tuple(current):
         return {
             "latest_version": metadata_latest or "Unavailable",
             "recommended_version": "Resolve version",
-            "version_status": "NEEDS_CHANGES",
+            "version_status": "VERSION_UNRESOLVED",
         }
     if not versions:
+        status = metadata.get("status")
         return {
             "latest_version": "Unavailable",
             "recommended_version": "Unavailable",
-            "version_status": "CHECK_UNAVAILABLE",
+            "version_status": "CHECK_UNAVAILABLE" if status not in {"NOT_FOUND", "NO_STABLE_RELEASE"} else status,
         }
 
     latest = versions[-1]
@@ -77,14 +87,13 @@ def fetch_metadata_for(coords):
             coordinate = futures[future]
             try:
                 cache[coordinate] = future.result()
-            except Exception:
-                cache[coordinate] = {"status": "UNAVAILABLE", "versions": []}
+            except Exception as exc:
+                cache[coordinate] = {"status": "UNAVAILABLE", "versions": [], "message": str(exc)[:140]}
     return cache
 
 
 def identify_frameworks(deps, info, metadata_cache, root):
     result = []
-    candidates = {}
     for name, coords in FRAMEWORK_RULES:
         found = []
         for group, artifact in coords:
@@ -96,7 +105,6 @@ def identify_frameworks(deps, info, metadata_cache, root):
                 if hint.get("version"):
                     found.append({"version": hint["version"], "component": "org.springframework.boot:spring-boot-starter-parent", "source": hint["source"], "module": rel(info["path"].parent, root)})
         if not found:
-            # Recognize split modules and framework starters without inventing their versions.
             fallback_groups = {
                 "Spring Framework": {"org.springframework"},
                 "Spring Security": {"org.springframework.security"},
@@ -110,10 +118,7 @@ def identify_frameworks(deps, info, metadata_cache, root):
 
         distinct = sorted({x["version"] for x in found}, key=version_sort_key)
         selected = next((x for x in found if x["version"] == distinct[-1]), found[0])
-        if name == "Spring Boot":
-            lookup = ("org.springframework.boot", "spring-boot-starter-parent")
-        else:
-            lookup = tuple(selected["component"].split(":", 1))
+        lookup = ("org.springframework.boot", "spring-boot-starter-parent") if name == "Spring Boot" else tuple(selected["component"].split(":", 1))
         metadata = metadata_cache.get(lookup, {"versions": [], "status": "SKIPPED"})
         advice = version_advice(selected["version"], metadata)
         result.append({
