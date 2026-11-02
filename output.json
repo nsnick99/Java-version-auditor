@@ -1,236 +1,341 @@
 {
   "auditor_version": "4.1",
-  "generated_at": "2026-11-02T09:50:02+00:00",
-  "project_path": "/mnt/MyDocuments/Java-Project/gs-rest-service",
-  "project_name": "gs-rest-service",
-  "build_system": "Multiple",
-  "current_java": "17",
+  "generated_at": "2026-11-02T09:53:26+00:00",
+  "project_path": "/mnt/MyDocuments/Java-Project/Java_Full_Stack_Project",
+  "project_name": "Java_Full_Stack_Project",
+  "build_system": "Maven",
+  "current_java": "11",
   "minimum_java": "8",
   "target_java": "21",
   "scan_summary": {
-    "build_files_found": 6,
-    "modules_analyzed": 6,
-    "dependencies_detected": 4,
-    "dependencies_with_updates": 4,
+    "build_files_found": 1,
+    "modules_analyzed": 1,
+    "dependencies_detected": 13,
+    "dependencies_with_updates": 10,
     "dependency_status_counts": {
-      "NEEDS_UPDATE": 4
+      "CURRENT": 1,
+      "NEEDS_UPDATE": 10,
+      "VERSION_UNRESOLVED": 2
     },
-    "frameworks_detected": 4,
-    "frameworks_reported": 4,
-    "framework_updates_reported": 4,
+    "frameworks_detected": 1,
+    "frameworks_reported": 1,
+    "framework_updates_reported": 1,
     "missing_references_found": 0,
     "dependency_resolution_diagnostics": []
   },
   "modules": [
     {
-      "name": "complete-kotlin",
-      "path": "complete-kotlin",
-      "build_file": "complete-kotlin/build.gradle.kts",
-      "build_system": "Gradle",
-      "java_version": "17"
-    },
-    {
-      "name": "complete",
-      "path": "complete",
-      "build_file": "complete/build.gradle",
-      "build_system": "Gradle",
-      "java_version": "17"
-    },
-    {
-      "name": "complete",
-      "path": "complete",
-      "build_file": "complete/pom.xml",
+      "name": "backend",
+      "path": "backend",
+      "build_file": "backend/pom.xml",
       "build_system": "Maven",
-      "java_version": "17"
-    },
-    {
-      "name": "initial-kotlin",
-      "path": "initial-kotlin",
-      "build_file": "initial-kotlin/build.gradle.kts",
-      "build_system": "Gradle",
-      "java_version": "17"
-    },
-    {
-      "name": "initial",
-      "path": "initial",
-      "build_file": "initial/build.gradle",
-      "build_system": "Gradle",
-      "java_version": "17"
-    },
-    {
-      "name": "initial",
-      "path": "initial",
-      "build_file": "initial/pom.xml",
-      "build_system": "Maven",
-      "java_version": "17"
+      "java_version": "11"
     }
   ],
   "frameworks": [
     {
       "name": "Spring Boot",
-      "version": "4.0.8",
+      "version": "2.7.5",
       "component": "org.springframework.boot:spring-boot-starter-parent",
-      "module": "complete",
-      "source": "complete/pom.xml:parent.version",
+      "module": "backend",
+      "source": "backend/pom.xml:parent.version",
       "latest_version": "4.1.2",
-      "recommended_version": "4.1.2",
-      "version_status": "NEEDS_UPDATE"
-    },
-    {
-      "name": "Spring Boot",
-      "version": "4.0.1",
-      "component": "org.springframework.boot:spring-boot-starter-parent",
-      "module": "complete-kotlin",
-      "source": "complete-kotlin/build.gradle.kts:Spring Boot plugin/version",
-      "latest_version": "4.1.2",
-      "recommended_version": "4.1.2",
-      "version_status": "NEEDS_UPDATE"
-    },
-    {
-      "name": "Spring Boot",
-      "version": "4.0.8",
-      "component": "org.springframework.boot:spring-boot-starter-parent",
-      "module": "initial",
-      "source": "initial/pom.xml:parent.version",
-      "latest_version": "4.1.2",
-      "recommended_version": "4.1.2",
-      "version_status": "NEEDS_UPDATE"
-    },
-    {
-      "name": "Spring Boot",
-      "version": "4.0.1",
-      "component": "org.springframework.boot:spring-boot-starter-parent",
-      "module": "initial-kotlin",
-      "source": "initial-kotlin/build.gradle.kts:Spring Boot plugin/version",
-      "latest_version": "4.1.2",
-      "recommended_version": "4.1.2",
+      "recommended_version": "2.7.18",
       "version_status": "NEEDS_UPDATE"
     }
   ],
   "dependencies": [
     {
-      "name": "org.springframework.boot:spring-boot-starter-webmvc",
-      "version": "4.0.8",
+      "name": "com.github.javafaker:javafaker",
+      "version": "1.0.2",
+      "scope": "compile",
+      "type": "direct",
+      "version_source": "property/direct declaration",
+      "module": "backend",
+      "latest_version": "1.0.2",
+      "recommended_version": "1.0.2",
+      "version_status": "CURRENT"
+    },
+    {
+      "name": "com.mysql:mysql-connector-j",
+      "version": "8.0.33",
+      "scope": "runtime",
+      "type": "direct",
+      "version_source": "property/direct declaration",
+      "module": "backend",
+      "latest_version": "26.10.0",
+      "recommended_version": "8.4.0",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "io.jsonwebtoken:jjwt",
+      "version": "0.9.1",
+      "scope": "compile",
+      "type": "direct",
+      "version_source": "property/direct declaration",
+      "module": "backend",
+      "latest_version": "0.13.0",
+      "recommended_version": "0.13.0",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.mongodb:mongodb-driver-sync",
+      "version": "Not resolved",
+      "scope": "compile",
+      "type": "direct",
+      "version_source": "inherited or BOM-managed",
+      "module": "backend",
+      "latest_version": "Unavailable",
+      "recommended_version": "Resolve version",
+      "version_status": "VERSION_UNRESOLVED"
+    },
+    {
+      "name": "org.projectlombok:lombok",
+      "version": "1.18.30",
+      "scope": "provided",
+      "type": "direct",
+      "version_source": "property/direct declaration",
+      "module": "backend",
+      "latest_version": "1.18.48",
+      "recommended_version": "1.18.48",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.springdoc:springdoc-openapi-ui",
+      "version": "1.7.0",
+      "scope": "compile",
+      "type": "direct",
+      "version_source": "property/direct declaration",
+      "module": "backend",
+      "latest_version": "1.8.0",
+      "recommended_version": "1.8.0",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.springframework.boot:spring-boot-devtools",
+      "version": "2.7.5",
       "scope": "compile",
       "type": "direct",
       "version_source": "Spring Boot parent dependency management",
-      "module": "complete",
+      "module": "backend",
       "latest_version": "4.1.2",
-      "recommended_version": "4.1.2",
+      "recommended_version": "2.7.18",
       "version_status": "NEEDS_UPDATE"
     },
     {
-      "name": "org.springframework.boot:spring-boot-starter-webmvc-test",
-      "version": "4.0.8",
-      "scope": "test",
-      "type": "direct",
-      "version_source": "Spring Boot parent dependency management",
-      "module": "complete",
-      "latest_version": "4.1.2",
-      "recommended_version": "4.1.2",
-      "version_status": "NEEDS_UPDATE"
-    },
-    {
-      "name": "org.springframework.boot:spring-boot-starter-webmvc",
-      "version": "4.0.8",
+      "name": "org.springframework.boot:spring-boot-starter-data-jpa",
+      "version": "2.7.5",
       "scope": "compile",
       "type": "direct",
       "version_source": "Spring Boot parent dependency management",
-      "module": "initial",
+      "module": "backend",
       "latest_version": "4.1.2",
-      "recommended_version": "4.1.2",
+      "recommended_version": "2.7.18",
       "version_status": "NEEDS_UPDATE"
     },
     {
-      "name": "org.springframework.boot:spring-boot-starter-webmvc-test",
-      "version": "4.0.8",
+      "name": "org.springframework.boot:spring-boot-starter-data-mongodb",
+      "version": "2.7.5",
+      "scope": "compile",
+      "type": "direct",
+      "version_source": "Spring Boot parent dependency management",
+      "module": "backend",
+      "latest_version": "4.1.2",
+      "recommended_version": "2.7.18",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.springframework.boot:spring-boot-starter-security",
+      "version": "2.7.5",
+      "scope": "compile",
+      "type": "direct",
+      "version_source": "Spring Boot parent dependency management",
+      "module": "backend",
+      "latest_version": "4.1.2",
+      "recommended_version": "2.7.18",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.springframework.boot:spring-boot-starter-test",
+      "version": "2.7.5",
       "scope": "test",
       "type": "direct",
       "version_source": "Spring Boot parent dependency management",
-      "module": "initial",
+      "module": "backend",
       "latest_version": "4.1.2",
-      "recommended_version": "4.1.2",
+      "recommended_version": "2.7.18",
       "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.springframework.boot:spring-boot-starter-web",
+      "version": "2.7.5",
+      "scope": "compile",
+      "type": "direct",
+      "version_source": "Spring Boot parent dependency management",
+      "module": "backend",
+      "latest_version": "4.1.2",
+      "recommended_version": "2.7.18",
+      "version_status": "NEEDS_UPDATE"
+    },
+    {
+      "name": "org.springframework.security:spring-security-crypto",
+      "version": "Not resolved",
+      "scope": "compile",
+      "type": "direct",
+      "version_source": "inherited or BOM-managed",
+      "module": "backend",
+      "latest_version": "Unavailable",
+      "recommended_version": "Resolve version",
+      "version_status": "VERSION_UNRESOLVED"
     }
   ],
   "missing_files": [],
   "api_findings": {
     "deprecatedApis": [],
     "internalApiUsage": [],
-    "namespaceMigration": []
+    "namespaceMigration": [
+      {
+        "ruleId": "NS-PERSISTENCE",
+        "severity": "BLOCKER",
+        "from": "javax.persistence.*",
+        "to": "jakarta.persistence.*",
+        "filesAffected": 3,
+        "occurrences": 3,
+        "reason": "Required by Spring Boot 3, Spring Framework 6, Tomcat 10+, Hibernate 6",
+        "locations": [
+          {
+            "class": "com.example.employeemanagement.model.Department"
+          },
+          {
+            "class": "com.example.employeemanagement.model.Employee"
+          },
+          {
+            "class": "com.example.employeemanagement.model.User"
+          }
+        ]
+      },
+      {
+        "ruleId": "NS-SERVLET",
+        "severity": "BLOCKER",
+        "from": "javax.servlet.*",
+        "to": "jakarta.servlet.*",
+        "filesAffected": 1,
+        "occurrences": 4,
+        "reason": "Required by Spring Boot 3, Spring Framework 6, Tomcat 10+, Hibernate 6",
+        "locations": [
+          {
+            "class": "com.example.employeemanagement.security.JwtRequestFilter"
+          }
+        ]
+      }
+    ]
   },
   "api_scan": {
     "basis": "source",
-    "units_scanned": 6
+    "units_scanned": 30
   },
-  "issues": [],
+  "issues": [
+    {
+      "title": "Dependency version unresolved",
+      "severity": "MEDIUM",
+      "path": "backend/pom.xml",
+      "message": "The version for org.mongodb:mongodb-driver-sync could not be resolved from the build files or dependency tree."
+    },
+    {
+      "title": "Dependency version unresolved",
+      "severity": "MEDIUM",
+      "path": "backend/pom.xml",
+      "message": "The version for org.springframework.security:spring-security-crypto could not be resolved from the build files or dependency tree."
+    }
+  ],
   "recommendations": [
     {
       "component": "Spring Boot",
-      "module": "complete",
-      "current_version": "4.0.8",
-      "recommended_version": "4.1.2",
+      "module": "backend",
+      "current_version": "2.7.5",
+      "recommended_version": "2.7.18",
       "reason": "Framework update identified from Maven Central metadata; verify Java requirements and release notes."
     },
     {
-      "component": "org.springframework.boot:spring-boot-starter-webmvc",
-      "module": "complete",
-      "current_version": "4.0.8",
-      "recommended_version": "4.1.2",
+      "component": "com.mysql:mysql-connector-j",
+      "module": "backend",
+      "current_version": "8.0.33",
+      "recommended_version": "8.4.0",
       "reason": "A newer stable release is available in the current major line."
     },
     {
-      "component": "org.springframework.boot:spring-boot-starter-webmvc-test",
-      "module": "complete",
-      "current_version": "4.0.8",
-      "recommended_version": "4.1.2",
+      "component": "io.jsonwebtoken:jjwt",
+      "module": "backend",
+      "current_version": "0.9.1",
+      "recommended_version": "0.13.0",
       "reason": "A newer stable release is available in the current major line."
     },
     {
-      "component": "Spring Boot",
-      "module": "complete-kotlin",
-      "current_version": "4.0.1",
-      "recommended_version": "4.1.2",
-      "reason": "Framework update identified from Maven Central metadata; verify Java requirements and release notes."
-    },
-    {
-      "component": "Spring Boot",
-      "module": "initial",
-      "current_version": "4.0.8",
-      "recommended_version": "4.1.2",
-      "reason": "Framework update identified from Maven Central metadata; verify Java requirements and release notes."
-    },
-    {
-      "component": "org.springframework.boot:spring-boot-starter-webmvc",
-      "module": "initial",
-      "current_version": "4.0.8",
-      "recommended_version": "4.1.2",
+      "component": "org.projectlombok:lombok",
+      "module": "backend",
+      "current_version": "1.18.30",
+      "recommended_version": "1.18.48",
       "reason": "A newer stable release is available in the current major line."
     },
     {
-      "component": "org.springframework.boot:spring-boot-starter-webmvc-test",
-      "module": "initial",
-      "current_version": "4.0.8",
-      "recommended_version": "4.1.2",
+      "component": "org.springdoc:springdoc-openapi-ui",
+      "module": "backend",
+      "current_version": "1.7.0",
+      "recommended_version": "1.8.0",
       "reason": "A newer stable release is available in the current major line."
     },
     {
-      "component": "Spring Boot",
-      "module": "initial-kotlin",
-      "current_version": "4.0.1",
-      "recommended_version": "4.1.2",
-      "reason": "Framework update identified from Maven Central metadata; verify Java requirements and release notes."
+      "component": "org.springframework.boot:spring-boot-devtools",
+      "module": "backend",
+      "current_version": "2.7.5",
+      "recommended_version": "2.7.18",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springframework.boot:spring-boot-starter-data-jpa",
+      "module": "backend",
+      "current_version": "2.7.5",
+      "recommended_version": "2.7.18",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springframework.boot:spring-boot-starter-data-mongodb",
+      "module": "backend",
+      "current_version": "2.7.5",
+      "recommended_version": "2.7.18",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springframework.boot:spring-boot-starter-security",
+      "module": "backend",
+      "current_version": "2.7.5",
+      "recommended_version": "2.7.18",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springframework.boot:spring-boot-starter-test",
+      "module": "backend",
+      "current_version": "2.7.5",
+      "recommended_version": "2.7.18",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springframework.boot:spring-boot-starter-web",
+      "module": "backend",
+      "current_version": "2.7.5",
+      "recommended_version": "2.7.18",
+      "reason": "A newer stable release is available in the current major line."
     }
   ],
   "migration": {
     "target_java": "21",
     "summary": {
-      "readiness_score": 82,
-      "readiness_level": "MINOR_WORK",
+      "readiness_score": 52,
+      "readiness_level": "NEEDS_SIGNIFICANT_WORK",
       "counts": {
-        "BLOCKER": 0,
+        "BLOCKER": 2,
         "HIGH": 0,
-        "MEDIUM": 9,
+        "MEDIUM": 12,
         "LOW": 0
       }
     },
@@ -244,10 +349,26 @@
       },
       {
         "step": 2,
+        "action": "Run the javax.* to jakarta.* namespace migration (e.g. OpenRewrite) and upgrade the frameworks that require it",
+        "refs": [
+          "NS-PERSISTENCE",
+          "NS-SERVLET"
+        ]
+      },
+      {
+        "step": 3,
         "action": "Upgrade other outdated libraries, replace end-of-life ones and resolve version conflicts",
         "refs": [
-          "component:org.springframework.boot:spring-boot-starter-webmvc",
-          "component:org.springframework.boot:spring-boot-starter-webmvc-test",
+          "component:com.mysql:mysql-connector-j",
+          "component:io.jsonwebtoken:jjwt",
+          "component:org.projectlombok:lombok",
+          "component:org.springdoc:springdoc-openapi-ui",
+          "component:org.springframework.boot:spring-boot-devtools",
+          "component:org.springframework.boot:spring-boot-starter-data-jpa",
+          "component:org.springframework.boot:spring-boot-starter-data-mongodb",
+          "component:org.springframework.boot:spring-boot-starter-security",
+          "component:org.springframework.boot:spring-boot-starter-test",
+          "component:org.springframework.boot:spring-boot-starter-web",
           "component:Spring Boot"
         ]
       }
@@ -263,76 +384,146 @@
     "environment": {
       "java": true,
       "maven": true,
-      "gradle": true,
-      "nodejs": false,
+      "gradle": false,
+      "nodejs": true,
       "python": false,
-      "docker": false,
-      "ci_cd": false,
+      "docker": true,
+      "ci_cd": true,
       "database": false,
       "infrastructure": false
     },
     "non_java_components": [
       {
-        "type": "SHELL_SCRIPT",
-        "path": "test/run.sh",
-        "impact": "BUILD_OR_DEPLOYMENT"
+        "type": "CI_CD",
+        "path": "Jenkinsfile",
+        "impact": "SUPPORTING"
+      },
+      {
+        "type": "DOCKER",
+        "path": "backend/Dockerfile",
+        "impact": "SUPPORTING"
+      },
+      {
+        "type": "DOCKER",
+        "path": "docker-compose.yml",
+        "impact": "SUPPORTING"
+      },
+      {
+        "type": "DOCKER",
+        "path": "frontend/Dockerfile",
+        "impact": "SUPPORTING"
+      },
+      {
+        "type": "DOCKER",
+        "path": "nginx/Dockerfile",
+        "impact": "SUPPORTING"
+      },
+      {
+        "type": "NODE_PROJECT",
+        "path": "frontend/package-lock.json",
+        "impact": "SUPPORTING"
+      },
+      {
+        "type": "NODE_PROJECT",
+        "path": "frontend/package.json",
+        "impact": "SUPPORTING"
+      },
+      {
+        "type": "NODE_PROJECT",
+        "path": "package-lock.json",
+        "impact": "SUPPORTING"
+      },
+      {
+        "type": "NODE_PROJECT",
+        "path": "package.json",
+        "impact": "SUPPORTING"
       },
       {
         "type": "WINDOWS_SCRIPT",
-        "path": "complete-kotlin/gradlew.bat",
-        "impact": "BUILD_OR_DEPLOYMENT"
-      },
-      {
-        "type": "WINDOWS_SCRIPT",
-        "path": "complete/gradlew.bat",
-        "impact": "BUILD_OR_DEPLOYMENT"
-      },
-      {
-        "type": "WINDOWS_SCRIPT",
-        "path": "complete/mvnw.cmd",
-        "impact": "BUILD_OR_DEPLOYMENT"
-      },
-      {
-        "type": "WINDOWS_SCRIPT",
-        "path": "initial-kotlin/gradlew.bat",
-        "impact": "BUILD_OR_DEPLOYMENT"
-      },
-      {
-        "type": "WINDOWS_SCRIPT",
-        "path": "initial/gradlew.bat",
-        "impact": "BUILD_OR_DEPLOYMENT"
-      },
-      {
-        "type": "WINDOWS_SCRIPT",
-        "path": "initial/mvnw.cmd",
+        "path": "backend/mvnw.cmd",
         "impact": "BUILD_OR_DEPLOYMENT"
       }
     ],
     "external_integrations": [
       {
+        "type": "CLOUD_AWS",
+        "path": "frontend/package-lock.json",
+        "impact": "EXTERNAL_DEPENDENCY"
+      },
+      {
         "type": "REST_ENDPOINT",
-        "path": "complete/.mvn/wrapper/maven-wrapper.properties",
+        "path": ".mvn/wrapper/maven-wrapper.properties",
         "impact": "EXTERNAL_INTEGRATION"
       },
       {
         "type": "REST_ENDPOINT",
-        "path": "complete/pom.xml",
+        "path": "backend/pom.xml",
         "impact": "EXTERNAL_INTEGRATION"
       },
       {
         "type": "REST_ENDPOINT",
-        "path": "initial/.mvn/wrapper/maven-wrapper.properties",
+        "path": "backend/src/main/java/com/example/employeemanagement/EmployeeManagementApplication.java",
         "impact": "EXTERNAL_INTEGRATION"
       },
       {
         "type": "REST_ENDPOINT",
-        "path": "initial/pom.xml",
+        "path": "backend/src/main/java/com/example/employeemanagement/controller/DepartmentController.java",
+        "impact": "EXTERNAL_INTEGRATION"
+      },
+      {
+        "type": "REST_ENDPOINT",
+        "path": "backend/src/main/java/com/example/employeemanagement/controller/EmployeeController.java",
+        "impact": "EXTERNAL_INTEGRATION"
+      },
+      {
+        "type": "REST_ENDPOINT",
+        "path": "docker-compose.yml",
+        "impact": "EXTERNAL_INTEGRATION"
+      },
+      {
+        "type": "REST_ENDPOINT",
+        "path": "frontend/package-lock.json",
+        "impact": "EXTERNAL_INTEGRATION"
+      },
+      {
+        "type": "REST_ENDPOINT",
+        "path": "frontend/package.json",
+        "impact": "EXTERNAL_INTEGRATION"
+      },
+      {
+        "type": "REST_ENDPOINT",
+        "path": "frontend/public/sitemap.xml",
+        "impact": "EXTERNAL_INTEGRATION"
+      },
+      {
+        "type": "REST_ENDPOINT",
+        "path": "kubernetes/configmap.yaml",
+        "impact": "EXTERNAL_INTEGRATION"
+      },
+      {
+        "type": "REST_ENDPOINT",
+        "path": "kubernetes/frontend-deployment.yaml",
+        "impact": "EXTERNAL_INTEGRATION"
+      },
+      {
+        "type": "REST_ENDPOINT",
+        "path": "openapi.yaml",
+        "impact": "EXTERNAL_INTEGRATION"
+      },
+      {
+        "type": "REST_ENDPOINT",
+        "path": "package-lock.json",
+        "impact": "EXTERNAL_INTEGRATION"
+      },
+      {
+        "type": "REST_ENDPOINT",
+        "path": "package.json",
         "impact": "EXTERNAL_INTEGRATION"
       }
     ],
     "summary": {
-      "non_java_component_count": 7,
-      "external_integration_count": 4
+      "non_java_component_count": 10,
+      "external_integration_count": 15
     }
   },
   "resolution": {
