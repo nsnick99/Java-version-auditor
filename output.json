@@ -1,6 +1,6 @@
 {
-  "auditor_version": "4.0",
-  "generated_at": "2026-11-02T07:39:09+00:00",
+  "auditor_version": "4.1",
+  "generated_at": "2026-11-02T09:26:25+00:00",
   "project_path": "/mnt/MyDocuments/Java-Project/gs-rest-service",
   "project_name": "gs-rest-service",
   "build_system": "Multiple",
@@ -11,40 +11,15 @@
     "build_files_found": 6,
     "modules_analyzed": 6,
     "dependencies_detected": 4,
-    "dependencies_with_updates": 0,
+    "dependencies_with_updates": 4,
     "dependency_status_counts": {
-      "VERSION_UNRESOLVED": 4
+      "NEEDS_UPDATE": 4
     },
     "frameworks_detected": 4,
     "frameworks_reported": 4,
     "framework_updates_reported": 4,
     "missing_references_found": 0,
-    "dependency_resolution_diagnostics": [
-      {
-        "module": "complete-kotlin",
-        "message": "\t... 2 more"
-      },
-      {
-        "module": "complete",
-        "message": "\t... 2 more"
-      },
-      {
-        "module": "complete",
-        "message": "Command timed out after 20 seconds."
-      },
-      {
-        "module": "initial-kotlin",
-        "message": "\t... 2 more"
-      },
-      {
-        "module": "initial",
-        "message": "\t... 2 more"
-      },
-      {
-        "module": "initial",
-        "message": "Command timed out after 20 seconds."
-      }
-    ]
+    "dependency_resolution_diagnostics": []
   },
   "modules": [
     {
@@ -97,8 +72,8 @@
       "component": "org.springframework.boot:spring-boot-starter-parent",
       "module": "complete",
       "source": "complete/pom.xml:parent.version",
-      "latest_version": "4.2.0-M1",
-      "recommended_version": "4.2.0-M1",
+      "latest_version": "4.1.2",
+      "recommended_version": "4.1.2",
       "version_status": "NEEDS_UPDATE"
     },
     {
@@ -107,8 +82,8 @@
       "component": "org.springframework.boot:spring-boot-starter-parent",
       "module": "complete-kotlin",
       "source": "complete-kotlin/build.gradle.kts:Spring Boot plugin/version",
-      "latest_version": "4.2.0-M1",
-      "recommended_version": "4.2.0-M1",
+      "latest_version": "4.1.2",
+      "recommended_version": "4.1.2",
       "version_status": "NEEDS_UPDATE"
     },
     {
@@ -117,8 +92,8 @@
       "component": "org.springframework.boot:spring-boot-starter-parent",
       "module": "initial",
       "source": "initial/pom.xml:parent.version",
-      "latest_version": "4.2.0-M1",
-      "recommended_version": "4.2.0-M1",
+      "latest_version": "4.1.2",
+      "recommended_version": "4.1.2",
       "version_status": "NEEDS_UPDATE"
     },
     {
@@ -127,55 +102,55 @@
       "component": "org.springframework.boot:spring-boot-starter-parent",
       "module": "initial-kotlin",
       "source": "initial-kotlin/build.gradle.kts:Spring Boot plugin/version",
-      "latest_version": "4.2.0-M1",
-      "recommended_version": "4.2.0-M1",
+      "latest_version": "4.1.2",
+      "recommended_version": "4.1.2",
       "version_status": "NEEDS_UPDATE"
     }
   ],
   "dependencies": [
     {
       "name": "org.springframework.boot:spring-boot-starter-webmvc",
-      "version": "Not resolved",
+      "version": "4.0.8",
       "scope": "compile",
       "type": "direct",
-      "version_source": "inherited or BOM-managed",
+      "version_source": "Spring Boot parent dependency management",
       "module": "complete",
-      "latest_version": "Unavailable",
-      "recommended_version": "Resolve version",
-      "version_status": "VERSION_UNRESOLVED"
+      "latest_version": "4.1.2",
+      "recommended_version": "4.1.2",
+      "version_status": "NEEDS_UPDATE"
     },
     {
       "name": "org.springframework.boot:spring-boot-starter-webmvc-test",
-      "version": "Not resolved",
+      "version": "4.0.8",
       "scope": "test",
       "type": "direct",
-      "version_source": "inherited or BOM-managed",
+      "version_source": "Spring Boot parent dependency management",
       "module": "complete",
-      "latest_version": "Unavailable",
-      "recommended_version": "Resolve version",
-      "version_status": "VERSION_UNRESOLVED"
+      "latest_version": "4.1.2",
+      "recommended_version": "4.1.2",
+      "version_status": "NEEDS_UPDATE"
     },
     {
       "name": "org.springframework.boot:spring-boot-starter-webmvc",
-      "version": "Not resolved",
+      "version": "4.0.8",
       "scope": "compile",
       "type": "direct",
-      "version_source": "inherited or BOM-managed",
+      "version_source": "Spring Boot parent dependency management",
       "module": "initial",
-      "latest_version": "Unavailable",
-      "recommended_version": "Resolve version",
-      "version_status": "VERSION_UNRESOLVED"
+      "latest_version": "4.1.2",
+      "recommended_version": "4.1.2",
+      "version_status": "NEEDS_UPDATE"
     },
     {
       "name": "org.springframework.boot:spring-boot-starter-webmvc-test",
-      "version": "Not resolved",
+      "version": "4.0.8",
       "scope": "test",
       "type": "direct",
-      "version_source": "inherited or BOM-managed",
+      "version_source": "Spring Boot parent dependency management",
       "module": "initial",
-      "latest_version": "Unavailable",
-      "recommended_version": "Resolve version",
-      "version_status": "VERSION_UNRESOLVED"
+      "latest_version": "4.1.2",
+      "recommended_version": "4.1.2",
+      "version_status": "NEEDS_UPDATE"
     }
   ],
   "missing_files": [],
@@ -188,107 +163,74 @@
     "basis": "source",
     "units_scanned": 6
   },
-  "issues": [
-    {
-      "title": "Dependency version unresolved",
-      "severity": "MEDIUM",
-      "path": "complete/pom.xml",
-      "message": "The version for org.springframework.boot:spring-boot-starter-webmvc could not be resolved from the build files or dependency tree."
-    },
-    {
-      "title": "Dependency version unresolved",
-      "severity": "MEDIUM",
-      "path": "complete/pom.xml",
-      "message": "The version for org.springframework.boot:spring-boot-starter-webmvc-test could not be resolved from the build files or dependency tree."
-    },
-    {
-      "title": "Dependency version unresolved",
-      "severity": "MEDIUM",
-      "path": "initial/pom.xml",
-      "message": "The version for org.springframework.boot:spring-boot-starter-webmvc could not be resolved from the build files or dependency tree."
-    },
-    {
-      "title": "Dependency version unresolved",
-      "severity": "MEDIUM",
-      "path": "initial/pom.xml",
-      "message": "The version for org.springframework.boot:spring-boot-starter-webmvc-test could not be resolved from the build files or dependency tree."
-    },
-    {
-      "title": "Dependency versions may be incomplete",
-      "severity": "MEDIUM",
-      "path": "complete-kotlin/build.gradle.kts",
-      "message": "\t... 2 more. Declared versions are retained; inherited/transitive versions may be missing."
-    },
-    {
-      "title": "Dependency versions may be incomplete",
-      "severity": "MEDIUM",
-      "path": "complete/build.gradle",
-      "message": "\t... 2 more. Declared versions are retained; inherited/transitive versions may be missing."
-    },
-    {
-      "title": "Dependency versions may be incomplete",
-      "severity": "MEDIUM",
-      "path": "complete/pom.xml",
-      "message": "Command timed out after 20 seconds.. Declared versions are retained; inherited/transitive versions may be missing."
-    },
-    {
-      "title": "Dependency versions may be incomplete",
-      "severity": "MEDIUM",
-      "path": "initial-kotlin/build.gradle.kts",
-      "message": "\t... 2 more. Declared versions are retained; inherited/transitive versions may be missing."
-    },
-    {
-      "title": "Dependency versions may be incomplete",
-      "severity": "MEDIUM",
-      "path": "initial/build.gradle",
-      "message": "\t... 2 more. Declared versions are retained; inherited/transitive versions may be missing."
-    },
-    {
-      "title": "Dependency versions may be incomplete",
-      "severity": "MEDIUM",
-      "path": "initial/pom.xml",
-      "message": "Command timed out after 20 seconds.. Declared versions are retained; inherited/transitive versions may be missing."
-    }
-  ],
+  "issues": [],
   "recommendations": [
     {
       "component": "Spring Boot",
       "module": "complete",
       "current_version": "4.0.8",
-      "recommended_version": "4.2.0-M1",
+      "recommended_version": "4.1.2",
       "reason": "Framework update identified from Maven Central metadata; verify Java requirements and release notes."
+    },
+    {
+      "component": "org.springframework.boot:spring-boot-starter-webmvc",
+      "module": "complete",
+      "current_version": "4.0.8",
+      "recommended_version": "4.1.2",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springframework.boot:spring-boot-starter-webmvc-test",
+      "module": "complete",
+      "current_version": "4.0.8",
+      "recommended_version": "4.1.2",
+      "reason": "A newer stable release is available in the current major line."
     },
     {
       "component": "Spring Boot",
       "module": "complete-kotlin",
       "current_version": "4.0.1",
-      "recommended_version": "4.2.0-M1",
+      "recommended_version": "4.1.2",
       "reason": "Framework update identified from Maven Central metadata; verify Java requirements and release notes."
     },
     {
       "component": "Spring Boot",
       "module": "initial",
       "current_version": "4.0.8",
-      "recommended_version": "4.2.0-M1",
+      "recommended_version": "4.1.2",
       "reason": "Framework update identified from Maven Central metadata; verify Java requirements and release notes."
+    },
+    {
+      "component": "org.springframework.boot:spring-boot-starter-webmvc",
+      "module": "initial",
+      "current_version": "4.0.8",
+      "recommended_version": "4.1.2",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.springframework.boot:spring-boot-starter-webmvc-test",
+      "module": "initial",
+      "current_version": "4.0.8",
+      "recommended_version": "4.1.2",
+      "reason": "A newer stable release is available in the current major line."
     },
     {
       "component": "Spring Boot",
       "module": "initial-kotlin",
       "current_version": "4.0.1",
-      "recommended_version": "4.2.0-M1",
+      "recommended_version": "4.1.2",
       "reason": "Framework update identified from Maven Central metadata; verify Java requirements and release notes."
     }
   ],
   "migration": {
     "target_java": "21",
     "summary": {
-      "readiness_score": 85,
-      "readiness_level": "READY",
+      "readiness_score": 82,
+      "readiness_level": "MINOR_WORK",
       "counts": {
         "BLOCKER": 0,
         "HIGH": 0,
-        "MEDIUM": 5,
+        "MEDIUM": 9,
         "LOW": 0
       }
     },
@@ -304,6 +246,8 @@
         "step": 2,
         "action": "Upgrade other outdated libraries, replace end-of-life ones and resolve version conflicts",
         "refs": [
+          "component:org.springframework.boot:spring-boot-starter-webmvc",
+          "component:org.springframework.boot:spring-boot-starter-webmvc-test",
           "component:Spring Boot"
         ]
       }
@@ -312,8 +256,7 @@
   "analysis_notes": [
     "No application runtime checks or build/test validation are performed.",
     "All detected dependencies and frameworks are retained in the report even when version metadata is unavailable; CHECK_UNAVAILABLE means the component was found but its remote version check could not be completed.",
-    "Latest/recommended versions use Maven Central metadata with Maven Versions Plugin fallback; update recommendations are emitted only when a newer release is established.",
-    "Dependency/version checks were incomplete for 6 module(s); see Issues for the diagnostic."
+    "Latest/recommended versions use Maven Central metadata with Maven Versions Plugin fallback; update recommendations are emitted only when a newer release is established."
   ],
   "project_environment": {
     "detector_version": "1.0",
@@ -391,5 +334,11 @@
       "non_java_component_count": 7,
       "external_integration_count": 4
     }
+  },
+  "resolution": {
+    "mode": "internal",
+    "internal_maven_configured": true,
+    "internal_maven_url": "http://10.0.16.236:8081/repository/maven-public",
+    "build_tool_resolution": "declarations_and_internal_metadata"
   }
 }
