@@ -10,6 +10,7 @@ from .utils import (
     resolve_path_expression,
 )
 
+
 def read_pom(pom, root):
     info = {"path": pom, "java_versions": [], "boot_versions": [], "direct_dependencies": [], "project_coordinates": None, "missing_files": [], "error": None, "is_aggregator": False}
     try:
@@ -40,11 +41,15 @@ def read_pom(pom, root):
     parent = child(document, "parent")
     if not group_id and parent is not None:
         group_id = node_text(parent, "groupId")
-    info["project_coordinates"] = (group_id, artifact_id, version)
+    if not version and parent is not None and node_text(parent, "groupId") == group_id:
+        version = node_text(parent, "version")
+    info["project_coordinates"] = (group_id, artifact_id, interpolate(version, properties) if version else None)
 
+    inherited_boot_version = None
     if parent is not None and node_text(parent, "groupId") == "org.springframework.boot" and node_text(parent, "artifactId") == "spring-boot-starter-parent":
         boot_version = interpolate(node_text(parent, "version"), properties)
         if boot_version:
+            inherited_boot_version = boot_version
             info["boot_versions"].append({"version": boot_version, "source": f"{rel(pom, root)}:parent.version"})
 
     managed = {}
@@ -68,10 +73,17 @@ def read_pom(pom, root):
             continue
         raw_version = node_text(dep, "version")
         resolved = interpolate(raw_version, properties) if raw_version else managed.get((g, a))
+        source = "property/direct declaration" if raw_version else ("local dependencyManagement" if resolved else "inherited or BOM-managed")
+        # Spring Boot's starter dependencies inherit the parent/BOM version. This
+        # avoids incorrectly reporting them as unresolved when the version is
+        # intentionally omitted from the dependency declaration.
+        if not resolved and inherited_boot_version and g == "org.springframework.boot":
+            resolved = inherited_boot_version
+            source = "Spring Boot parent dependency management"
         entry = {
             "group_id": g, "artifact_id": a, "version": resolved,
             "scope": node_text(dep, "scope") or "compile", "direct": True,
-            "version_source": "property/direct declaration" if raw_version else ("local dependencyManagement" if resolved else "inherited or BOM-managed"),
+            "version_source": source,
             "module": rel(pom.parent, root), "source": rel(pom, root),
         }
         info["direct_dependencies"].append(entry)
