@@ -38,12 +38,7 @@ def maven_metadata(group, artifact):
 
 
 def version_advice(current, metadata):
-    """Classify an update using stable releases only.
-
-    The newest available release is informational. A same-major stable release is
-    preferred as the default recommendation; a newer major is never silently
-    presented as a routine update.
-    """
+    """Classify an update using stable releases only."""
     versions = list(metadata.get("versions", []) or [])
     metadata_latest = metadata.get("latest_version")
     if metadata_latest and metadata_latest not in versions:
@@ -116,6 +111,11 @@ def identify_frameworks(deps, info, metadata_cache, root):
         if not found:
             continue
 
+        # Select the highest detected version for the framework/module. The
+        # previous implementation reported distinct[0], which could be the
+        # oldest version when multiple signals existed (for example a Spring
+        # Boot parent plus a starter dependency). The selected version is the
+        # authoritative version used for the framework report and comparison.
         distinct = sorted({x["version"] for x in found}, key=version_sort_key)
         selected = next((x for x in found if x["version"] == distinct[-1]), found[0])
         lookup = ("org.springframework.boot", "spring-boot-starter-parent") if name == "Spring Boot" else tuple(selected["component"].split(":", 1))
@@ -123,7 +123,7 @@ def identify_frameworks(deps, info, metadata_cache, root):
         advice = version_advice(selected["version"], metadata)
         result.append({
             "name": name,
-            "version": distinct[0] if len(distinct) == 1 else "Multiple",
+            "version": selected["version"],
             "component": selected["component"],
             "module": selected.get("module") or rel(info["path"].parent, root),
             "source": selected.get("source"),
