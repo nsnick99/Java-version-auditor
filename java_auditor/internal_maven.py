@@ -11,13 +11,31 @@ from .config import HTTP_TIMEOUT, PRE_RELEASE, USER_AGENT
 from .utils import child, node_text, version_sort_key
 
 
-def maven_metadata(group, artifact, base_url):
+def _result(status, url, versions=None, message=None):
+    result = {"status": status, "versions": versions or [], "source": url}
+    if versions:
+        result["latest_version"] = versions[-1]
+    if message:
+        result["message"] = message[:220]
+    return result
+
+
+def maven_metadata(group, artifact, base_url, timeout=None):
+    """Read Maven metadata directly from an internal repository.
+
+    This deliberately does not fall back to Maven Central. That makes internal mode
+    deterministic for air-gapped environments and lets callers distinguish a
+    missing artifact from a repository/network failure.
+    """
     path = "/".join(urllib.parse.quote(piece, safe="") for piece in group.split("."))
     artifact_path = urllib.parse.quote(artifact, safe="")
     url = base_url.rstrip("/") + f"/{path}/{artifact_path}/maven-metadata.xml"
-    request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, "Accept": "application/xml,text/xml,*/*"})
+    request = urllib.request.Request(
+        url,
+        headers={"User-Agent": USER_AGENT, "Accept": "application/xml,text/xml,*/*"},
+    )
     try:
-        with urllib.request.urlopen(request, timeout=HTTP_TIMEOUT) as response:
+        with urllib.request.urlopen(request, timeout=timeout or HTTP_TIMEOUT) as response:
             root = ET.fromstring(response.read())
         versioning = child(root, "versioning")
         version_node = child(versioning, "versions")
@@ -26,8 +44,16 @@ def maven_metadata(group, artifact, base_url):
         if not stable:
             release = node_text(versioning, "release")
             stable = [release] if release and not PRE_RELEASE.search(release) else []
-        return {"status": "FOUND", "versions": stable, "latest_version": stable[-1], "source": url} if stable else {"status": "NO_STABLE_RELEASE", "versions": [], "source": url}
+        return _result("FOUND", url, stable) if stable else _result("NO_STABLE_RELEASE", url)
     except urllib.error.HTTPError as exc:
-        return {"status": "NOT_FOUND" if exc.code == 404 else "UNAVAILABLE", "versions": [], "source": url}
+        if exc.code == 404:
+            return _result("NOT_FOUND", url)
+        if exc.code in {401, 403}:
+            return _result("AUTH_REQUIRED", url, message=f"Internal repository returned HTTP {exc.code}")
+        return _result("UNAVAILABLE", url, message=f"Internal repository returned HTTP {exc.code}")
+    except (TimeoutError, OSError) as exc:
+        return _result("TIMEOUT", url, message=str(exc))
+    except ET.ParseError as exc:
+        return _result("INVALID_METADATA", url, message=f"Invalid Maven metadata XML: {exc}")
     except Exception as exc:
-        return {"status": "UNAVAILABLE", "versions": [], "source": url, "message": str(exc)[:140]}
+        return _result("UNAVAILABLE", url, message=str(exc))
