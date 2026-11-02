@@ -1,23 +1,23 @@
 {
   "report_type": "critical_migration_only",
   "auditor_version": "4.0",
-  "generated_at": "2026-10-30T10:12:37+00:00",
-  "project_name": "Java_Full_Stack_Project",
-  "build_system": "Maven",
-  "current_java": "11",
+  "generated_at": "2026-11-02T07:39:09+00:00",
+  "project_name": "gs-rest-service",
+  "build_system": "Multiple",
+  "current_java": "17",
   "target_java": "21",
   "summary": {
     "build_blockers": 1,
-    "critical_dependencies": 4,
-    "framework_migrations": 1,
-    "api_findings": 2,
-    "migration_required": 8,
-    "routine_dependencies_excluded": 108
+    "critical_dependencies": 0,
+    "framework_migrations": 0,
+    "api_findings": 0,
+    "migration_required": 1,
+    "routine_dependencies_excluded": 4
   },
   "build_blockers": [
     {
       "component": "Java",
-      "current_version": "11",
+      "current_version": "17",
       "target_version": "21",
       "severity": "CRITICAL",
       "build_failure_risk": true,
@@ -25,159 +25,20 @@
       "action": "Update Maven/Gradle compiler configuration to Java 21 and verify JDK API compatibility."
     }
   ],
-  "critical_dependencies": [
-    {
-      "name": "io.jsonwebtoken:jjwt",
-      "current_version": "0.9.1",
-      "recommended_version": "0.13.0",
-      "severity": "HIGH",
-      "build_failure_risk": false,
-      "source_changes_required": true,
-      "action": "Upgrade JJWT and verify/migrate JWT parsing, signing, and claims APIs."
-    },
-    {
-      "name": "jakarta.persistence:jakarta.persistence-api",
-      "current_version": "2.2.3",
-      "recommended_version": "4.0.0-M2",
-      "severity": "CRITICAL",
-      "build_failure_risk": true,
-      "source_changes_required": false,
-      "action": "Align JPA with the selected Spring Boot generation and inspect javax/jakarta imports and persistence APIs."
-    },
-    {
-      "name": "jakarta.transaction:jakarta.transaction-api",
-      "current_version": "1.3.3",
-      "recommended_version": "2.0.1",
-      "severity": "CRITICAL",
-      "build_failure_risk": true,
-      "source_changes_required": false,
-      "action": "Align the transaction API with the selected Spring Boot generation and inspect javax/jakarta imports."
-    },
-    {
-      "name": "jakarta.validation:jakarta.validation-api",
-      "current_version": "2.0.2",
-      "recommended_version": "4.0.0-M1",
-      "severity": "CRITICAL",
-      "build_failure_risk": true,
-      "source_changes_required": false,
-      "action": "Align the validation API with the selected Spring Boot generation and inspect javax/jakarta imports."
-    }
-  ],
-  "framework_migrations": [
-    {
-      "name": "JPA",
-      "current_version": "2.2.3",
-      "recommended_version": "4.0.0-M2",
-      "severity": "CRITICAL",
-      "build_failure_risk": true,
-      "source_changes_required": true,
-      "action": "Align this framework with the selected Spring/Java generation; inspect API and configuration changes before upgrading."
-    }
-  ],
-  "api_findings": [
-    {
-      "category": "namespaceMigration",
-      "rule_id": "NS-PERSISTENCE",
-      "severity": "BLOCKER",
-      "message": null,
-      "path": null,
-      "action": "Update the affected API usage and re-run the audit."
-    },
-    {
-      "category": "namespaceMigration",
-      "rule_id": "NS-SERVLET",
-      "severity": "BLOCKER",
-      "message": null,
-      "path": null,
-      "action": "Update the affected API usage and re-run the audit."
-    }
-  ],
+  "critical_dependencies": [],
+  "framework_migrations": [],
+  "api_findings": [],
   "migration_required": [
     {
       "id": "JAVA-TARGET",
       "category": "java",
       "component": "Java",
       "severity": "CRITICAL",
-      "current_version": "11",
+      "current_version": "17",
       "target_version": "21",
       "build_failure_risk": true,
       "source_changes_required": false,
       "action": "Update Maven/Gradle compiler configuration to Java 21 and verify JDK API compatibility."
-    },
-    {
-      "id": "DEPENDENCY-io.jsonwebtoken:jjwt",
-      "category": "dependency",
-      "component": "io.jsonwebtoken:jjwt",
-      "severity": "HIGH",
-      "current_version": "0.9.1",
-      "target_version": "0.13.0",
-      "build_failure_risk": false,
-      "source_changes_required": true,
-      "action": "Upgrade JJWT and verify/migrate JWT parsing, signing, and claims APIs."
-    },
-    {
-      "id": "DEPENDENCY-jakarta.persistence:jakarta.persistence-api",
-      "category": "dependency",
-      "component": "jakarta.persistence:jakarta.persistence-api",
-      "severity": "CRITICAL",
-      "current_version": "2.2.3",
-      "target_version": "4.0.0-M2",
-      "build_failure_risk": true,
-      "source_changes_required": false,
-      "action": "Align JPA with the selected Spring Boot generation and inspect javax/jakarta imports and persistence APIs."
-    },
-    {
-      "id": "DEPENDENCY-jakarta.transaction:jakarta.transaction-api",
-      "category": "dependency",
-      "component": "jakarta.transaction:jakarta.transaction-api",
-      "severity": "CRITICAL",
-      "current_version": "1.3.3",
-      "target_version": "2.0.1",
-      "build_failure_risk": true,
-      "source_changes_required": false,
-      "action": "Align the transaction API with the selected Spring Boot generation and inspect javax/jakarta imports."
-    },
-    {
-      "id": "DEPENDENCY-jakarta.validation:jakarta.validation-api",
-      "category": "dependency",
-      "component": "jakarta.validation:jakarta.validation-api",
-      "severity": "CRITICAL",
-      "current_version": "2.0.2",
-      "target_version": "4.0.0-M1",
-      "build_failure_risk": true,
-      "source_changes_required": false,
-      "action": "Align the validation API with the selected Spring Boot generation and inspect javax/jakarta imports."
-    },
-    {
-      "id": "FRAMEWORK-JPA",
-      "category": "framework",
-      "component": "JPA",
-      "severity": "CRITICAL",
-      "current_version": "2.2.3",
-      "target_version": "4.0.0-M2",
-      "build_failure_risk": true,
-      "source_changes_required": true,
-      "action": "Align this framework with the selected Spring/Java generation; inspect API and configuration changes before upgrading."
-    },
-    {
-      "id": "API-NS-PERSISTENCE",
-      "category": "api",
-      "component": "NS-PERSISTENCE",
-      "severity": "BLOCKER",
-      "build_failure_risk": true,
-      "source_changes_required": true,
-      "path": null,
-      "action": "Update the affected API usage and re-run the audit."
-    },
-    {
-      "id": "API-NS-SERVLET",
-      "category": "api",
-      "component": "NS-SERVLET",
-      "severity": "BLOCKER",
-      "build_failure_risk": true,
-      "source_changes_required": true,
-      "path": null,
-      "action": "Update the affected API usage and re-run the audit."
     }
   ],
   "note": "This report intentionally excludes routine dependency updates and transitive dependencies unless they are associated with a known build or migration risk. The full output.json remains the detailed audit."
