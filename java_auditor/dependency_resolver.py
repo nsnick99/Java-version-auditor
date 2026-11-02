@@ -10,6 +10,11 @@ from .utils import (
     version_sort_key, version_tuple,
 )
 
+# Runtime-configured by the CLI. Internal mode intentionally avoids expensive
+# Maven/Gradle network resolution and uses parsed declarations + internal metadata.
+RESOLUTION_MODE = "normal"
+INTERNAL_MAVEN_URL = None
+
 MAVEN_COORD = re.compile(
     r"(?P<group>[A-Za-z0-9_.-]+):(?P<artifact>[A-Za-z0-9_.-]+):(?P<type>[A-Za-z0-9_.-]+):"
     r"(?:(?P<classifier>[A-Za-z0-9_.-]+):)?(?P<version>[^:\s]+):"
@@ -86,17 +91,14 @@ def parse_versions_plugin_output(output):
         key = (group, artifact)
         if key in updates:
             versions = sorted(set(versions + updates[key]["versions"]), key=version_sort_key)
-        updates[key] = {
-            "status": "FOUND",
-            "versions": versions,
-            "latest_version": versions[-1],
-            "source": "Maven Versions Plugin",
-        }
+        updates[key] = {"status": "FOUND", "versions": versions, "latest_version": versions[-1], "source": "Maven Versions Plugin"}
     return updates
 
 
 def resolve_maven_updates(info, root):
     """Use Maven's Versions Plugin as a fallback for release-version lookup."""
+    if RESOLUTION_MODE == "internal":
+        return {}, None
     launcher = executable_or_wrapper(root, "mvn", info["path"].parent)
     if not launcher:
         return {}, "Maven executable or wrapper not found for version lookup"
@@ -104,10 +106,8 @@ def resolve_maven_updates(info, root):
     plugin_version = "2.21.0"
     command = launcher + [
         "-B", "-f", str(info["path"].resolve()),
-        "-Dstyle.color=never",
-        "-Dversions.showNewestPerSegment=true",
-        "-DshowVersionless=true",
-        "-Dverbose=false",
+        "-Dstyle.color=never", "-Dversions.showNewestPerSegment=true",
+        "-DshowVersionless=true", "-Dverbose=false",
         f"org.codehaus.mojo:versions-maven-plugin:{plugin_version}:display-dependency-updates",
         f"org.codehaus.mojo:versions-maven-plugin:{plugin_version}:display-parent-updates",
     ]
@@ -122,7 +122,25 @@ def resolve_maven_updates(info, root):
     return {}, lines[-1][:220] if lines else "Maven Versions Plugin could not check newer versions"
 
 
+def _declaration_resolution(info, root):
+    """Use already-parsed build declarations without invoking Maven/Gradle."""
+    resolved = []
+    for dep in info.get("direct_dependencies", []):
+        item = dict(dep)
+        item["version_source"] = item.get("version_source") or "build declaration"
+        item["resolution_status"] = "DECLARED" if item.get("version") else "UNRESOLVED"
+        resolved.append(item)
+    return resolved
+
+
 def resolve_dependency_tree(info, root):
+    # Internal mode is intentionally deterministic: repository metadata is queried
+    # separately, while Maven/Gradle are not allowed to trigger public-network or
+    # wrapper/plugin resolution. This prevents false VERSION_UNRESOLVED results
+    # caused by build-tool timeouts in air-gapped environments.
+    if RESOLUTION_MODE == "internal":
+        return _declaration_resolution(info, root), None
+
     system = info.get("build_system")
     if system == "Maven":
         launcher = executable_or_wrapper(root, "mvn", info["path"].parent)
@@ -169,11 +187,11 @@ def merge_dependencies(info, tree_deps):
             item["version_source"] = declaration["version_source"]
             item["scope"] = declaration.get("scope") or item["scope"]
             item["source"] = declaration["source"]
+            item["module"] = declaration.get("module") or item.get("module")
         merged[(item["group_id"], item["artifact_id"], item.get("version"))] = item
     for dep in info["direct_dependencies"]:
         coordinate = (dep["group_id"], dep["artifact_id"])
         if coordinate in resolved_coordinates:
-            # The resolved tree supplies the effective version; do not add a duplicate null-version row.
             continue
         key = (dep["group_id"], dep["artifact_id"], dep.get("version"))
         if key not in merged:
