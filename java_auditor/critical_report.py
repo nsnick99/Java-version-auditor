@@ -6,7 +6,7 @@ def build_critical_report(report):
     findings = []
     for issue in report.get("issues", []):
         sev = str(issue.get("severity", "")).upper()
-        if sev in {"CRITICAL", "BLOCKER", "HIGH"}:
+        if sev in {"CRITICAL", "BLOCKER", "HIGH"} and "credential" not in str(issue.get("title", "")).lower():
             findings.append({
                 "category": "security" if "credential" in str(issue.get("title", "")).lower() else "technical",
                 "title": issue.get("title", "Technical issue"), "severity": sev,
