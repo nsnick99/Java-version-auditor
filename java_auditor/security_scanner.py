@@ -1,6 +1,9 @@
 """Conservative source/config secret detection for project directories."""
 from __future__ import annotations
+import json
 import re
+import urllib.error
+import urllib.request
 from pathlib import Path
 from .utils import iter_project_files, rel
 
@@ -40,3 +43,54 @@ def scan_secrets(root: Path) -> list[dict]:
                 })
                 break
     return findings
+
+
+def scan_dependency_vulnerabilities(dependencies, timeout: int = 5) -> dict:
+    """Query OSV in one batch. Returns explicit status when the service is unavailable."""
+    packages = []
+    for dep in dependencies:
+        group, artifact, version = dep.get("group_id"), dep.get("artifact_id"), dep.get("version")
+        if not group or not artifact or not version or version == "Not resolved":
+            continue
+        packages.append({
+            "name": f"{group}:{artifact}",
+            "version": str(version),
+            "query": {"package": {"purl": f"pkg:maven/{group}/{artifact}"}, "version": str(version)}
+        })
+    if not packages:
+        return {"status": "NO_RESOLVED_DEPENDENCIES", "findings": []}
+    payload = json.dumps({"queries": [p["query"] for p in packages]}).encode("utf-8")
+    request = urllib.request.Request(
+        "https://api.osv.dev/v1/querybatch", data=payload,
+        headers={"Content-Type": "application/json", "User-Agent": "Java-Version-Auditor"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            data = json.loads(response.read().decode("utf-8"))
+    except (OSError, urllib.error.URLError, TimeoutError, ValueError) as exc:
+        return {"status": "UNAVAILABLE", "message": str(exc)[:180], "findings": []}
+    findings = []
+    for package, result in zip(packages, data.get("results", [])):
+        for vuln in result.get("vulns", []) or []:
+            severity = "UNKNOWN"
+            cvss_score = None
+            for item in vuln.get("severity", []) or []:
+                score = item.get("score", "")
+                match = re.search(r"(?:CVSS:[^/]+/)?(\d+(?:\.\d+)?)$", str(score))
+                if match:
+                    cvss_score = float(match.group(1))
+                    severity = "CRITICAL" if cvss_score >= 9 else "HIGH" if cvss_score >= 7 else "MEDIUM" if cvss_score >= 4 else "LOW"
+                    break
+            findings.append({
+                "id": vuln.get("id"),
+                "aliases": vuln.get("aliases", []),
+                "package": package["name"],
+                "version": package["version"],
+                "severity": severity,
+                "cvss_score": cvss_score,
+                "summary": vuln.get("summary") or vuln.get("details", "")[:300],
+                "modified": vuln.get("modified"),
+                "source": "OSV",
+            })
+    return {"status": "COMPLETED", "findings": findings}
