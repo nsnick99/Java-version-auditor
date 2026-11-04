@@ -18,6 +18,12 @@ python auditor.py "C:\Users\YourName\Desktop\Java-test"
 
 The report is written beside `auditor.py`, not inside the scanned project.
 
+Each run writes two reports beside `auditor.py`:
+- `output.json` — full technical audit, dependency inventory, compatibility and security findings.
+- `critical_updates.json` — evidence-based critical technical findings; it does not calculate migration readiness.
+
+The repository's checked-in JSON files are prior run artifacts. Regenerate them after updating the auditor; do not treat old JSON as output from the latest code.
+
 ### Audit modes
 
 The default mode is **fast**. It uses bounded network/tool timeouts and skips the Maven Versions Plugin fallback, which is often the slowest part of a large Maven scan.
