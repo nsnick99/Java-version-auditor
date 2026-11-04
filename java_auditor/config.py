@@ -3,7 +3,7 @@
 import os
 import re
 
-AUDITOR_VERSION = "4.1"
+AUDITOR_VERSION = "4.2"
 TARGET_JAVA = 21
 ARTIFACT_EXTENSIONS = {".war", ".jar", ".ear", ".zip"}
 MINIMUM_JAVA_VERSION = "8"
@@ -12,7 +12,7 @@ TOOL_TIMEOUT = int(os.getenv("JAVA_AUDITOR_TOOL_TIMEOUT", "30"))
 SKIP_DIRS = {".git", ".idea", "target", "build", "out", "bin", "node_modules", ".gradle", "__pycache__", ".venv", "venv"}
 BUILD_NAMES = {"pom.xml", "build.gradle", "build.gradle.kts", "build.xml"}
 SETTINGS_NAMES = {"settings.gradle", "settings.gradle.kts"}
-USER_AGENT = "Java-Version-Auditor/4.1"
+USER_AGENT = "Java-Version-Auditor/4.2"
 PLACEHOLDER_START = "$" + "{"
 # Maven metadata uses several abbreviated pre-release forms (M1, RC1, etc.).
 PRE_RELEASE = re.compile(r"(?i)(?:^|[.\-_])(alpha|beta|milestone|preview|nightly|dev|ea|m|rc)(?:[.\-_]?\d+)?(?:$|[.\-_])|(?:snapshot)")
