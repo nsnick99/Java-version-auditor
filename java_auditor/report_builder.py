@@ -7,8 +7,8 @@ from pathlib import Path
 
 from .build_files import read_ant, read_gradle, read_pom
 from .config import AUDITOR_VERSION, BUILD_NAMES, MINIMUM_JAVA_VERSION, SETTINGS_NAMES, TARGET_JAVA
-from .migration import build_migration
 from .source_api_scanner import scan_project_apis
+from .security_scanner import scan_secrets
 from .dependency_resolver import merge_dependencies, resolve_dependency_tree, resolve_maven_updates
 from .project_scanner import detect_missing_gradle_modules, scan_deprecated_apis
 from .utils import find_files, java_major, progress, rel, version_sort_key, version_tuple
@@ -274,29 +274,19 @@ def build_report(project_path, target_java=TARGET_JAVA):
             java_gap = {"current": detected, "target": str(target_java)}
             break
 
-    outdated = [
-        {
-            "name": f"{d['group_id']}:{d['artifact_id']}",
-            "current": d.get("version"),
-            "recommended": d.get("recommended_version"),
-            "kind": "OUTDATED",
-            "requires_jakarta": False,
-        }
-        for d in dependencies
-        if d.get("version_status") in {"NEEDS_UPDATE", "MAJOR_UPDATE_AVAILABLE"}
-    ]
-    outdated += [
-        {
-            "name": f["name"],
-            "current": f["version"],
-            "recommended": f.get("recommended_version"),
-            "kind": "NEEDS_CHANGES" if f.get("version_status") == "NEEDS_CHANGES" else "OUTDATED",
-            "requires_jakarta": False,
-        }
-        for f in frameworks
-        if f.get("version_status") in {"NEEDS_UPDATE", "MAJOR_UPDATE_AVAILABLE", "NEEDS_CHANGES"}
-    ]
-    migration = build_migration(target_java, api_findings, missing_files, [], [], outdated, [], java_gap)
+    # Detect likely hardcoded credentials independently of dependency metadata.
+    security_findings = scan_secrets(root)
+    for finding in security_findings:
+        issues.append({
+            "title": "Potential hardcoded credential",
+            "severity": finding["severity"],
+            "path": finding["path"],
+            "message": finding["evidence"],
+        })
+    issues.sort(key=lambda x: ({"HIGH": 0, "MEDIUM": 1, "LOW": 2}.get(x.get("severity"), 3), x.get("title", ""), x.get("path") or ""))
+
+    progress("Running rule-based API scan and building the technical audit report...")
+    api_findings, api_scan = scan_project_apis(root, target_java)
 
     return {
         "auditor_version": AUDITOR_VERSION,
@@ -349,7 +339,7 @@ def build_report(project_path, target_java=TARGET_JAVA):
         "api_scan": api_scan,
         "issues": issues,
         "recommendations": recommendations,
-        "migration": migration,
+        "security_findings": security_findings,
         "analysis_notes": [
             "No application runtime checks or build/test validation are performed.",
             "All detected dependencies and frameworks are retained in the report even when version metadata is unavailable; CHECK_UNAVAILABLE means the component was found but its remote version check could not be completed.",
