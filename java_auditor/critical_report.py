@@ -1,254 +1,67 @@
-"""Build a compact, action-focused migration report from the full audit report."""
-
+"""Evidence-based summary of critical technical findings."""
 from __future__ import annotations
-
 from datetime import datetime
 
-
-CRITICAL_COORDINATES = {
-    "io.jsonwebtoken:jjwt",
-    "jakarta.persistence:jakarta.persistence-api",
-    "javax.persistence:javax.persistence-api",
-    "javax.servlet:javax.servlet-api",
-    "javax.validation:validation-api",
-    "jakarta.validation:jakarta.validation-api",
-    "jakarta.transaction:jakarta.transaction-api",
-    "javax.transaction:javax.transaction-api",
-}
-
-CRITICAL_FRAMEWORKS = {
-    "Spring Boot",
-    "Spring Framework",
-    "Spring MVC",
-    "Spring Security",
-    "JPA",
-    "Hibernate",
-}
-
-
-def _dependency_action(dep):
-    name = dep["name"]
-    if name == "io.jsonwebtoken:jjwt":
-        return "Upgrade JJWT and verify/migrate JWT parsing, signing, and claims APIs."
-    if "persistence-api" in name:
-        return "Align JPA with the selected Spring Boot generation and inspect javax/jakarta imports and persistence APIs."
-    if "servlet-api" in name:
-        return "Align the Servlet API with the selected Spring Boot generation and inspect javax/jakarta imports."
-    if "validation-api" in name:
-        return "Align the validation API with the selected Spring Boot generation and inspect javax/jakarta imports."
-    if "transaction-api" in name:
-        return "Align the transaction API with the selected Spring Boot generation and inspect javax/jakarta imports."
-    return "Review compatibility before upgrading; do not blindly select the newest major version."
-
-
-def _migration_action(item, category):
-    """Convert a critical finding into a concrete migration task."""
-    if category == "java":
-        return {
-            "id": "JAVA-TARGET",
-            "category": "java",
-            "component": "Java",
-            "severity": item["severity"],
-            "current_version": item.get("current_version"),
-            "target_version": item.get("target_version"),
-            "build_failure_risk": item.get("build_failure_risk", True),
-            "source_changes_required": item.get("source_changes_required", False),
-            "action": item["action"],
-        }
-
-    if category == "dependency":
-        return {
-            "id": f"DEPENDENCY-{item['name']}",
-            "category": "dependency",
-            "component": item["name"],
-            "severity": item["severity"],
-            "current_version": item.get("current_version"),
-            "target_version": item.get("recommended_version"),
-            "build_failure_risk": item.get("build_failure_risk", False),
-            "source_changes_required": item.get("source_changes_required", False),
-            "action": item["action"],
-        }
-
-    if category == "framework":
-        return {
-            "id": f"FRAMEWORK-{item['name'].upper().replace(' ', '-')}",
-            "category": "framework",
-            "component": item["name"],
-            "severity": item["severity"],
-            "current_version": item.get("current_version"),
-            "target_version": item.get("recommended_version"),
-            "build_failure_risk": item.get("build_failure_risk", True),
-            "source_changes_required": item.get("source_changes_required", True),
-            "action": item["action"],
-        }
-
-    if category == "api":
-        rule_id = item.get("rule_id") or "UNKNOWN"
-        return {
-            "id": f"API-{rule_id}",
-            "category": "api",
-            "component": rule_id,
-            "severity": item["severity"],
-            "build_failure_risk": True,
-            "source_changes_required": True,
-            "path": item.get("path"),
-            "action": item["action"],
-        }
-
-    return None
-
-
 def build_critical_report(report):
-    """Return only actionable build/migration risks from a full report."""
-    target_java = str(report.get("target_java", ""))
-    current_java = str(report.get("current_java", ""))
-
-    build_blockers = []
-    migration_required = []
-    critical_dependencies = []
-    framework_migrations = []
-    api_findings = []
-
-    if target_java and current_java not in {"", "Not detected", "Multiple", target_java}:
-        build_blockers.append({
-            "component": "Java",
-            "current_version": current_java,
-            "target_version": target_java,
-            "severity": "CRITICAL",
-            "build_failure_risk": True,
-            "source_changes_required": False,
-            "action": f"Update Maven/Gradle compiler configuration to Java {target_java} and verify JDK API compatibility.",
-        })
-
+    findings = []
     for issue in report.get("issues", []):
-        if issue.get("severity") not in {"HIGH", "BLOCKER"}:
-            continue
-        build_blockers.append({
-            "component": issue.get("title"),
-            "severity": issue.get("severity"),
-            "path": issue.get("path"),
-            "build_failure_risk": True,
-            "action": issue.get("message"),
-        })
-
-    for category, findings in report.get("api_findings", {}).items():
-        for finding in findings or []:
-            if finding.get("severity") not in {"BLOCKER", "HIGH"}:
-                continue
-            api_findings.append({
-                "category": category,
-                "rule_id": finding.get("ruleId"),
-                "severity": finding.get("severity"),
-                "message": finding.get("message") or finding.get("description"),
-                "path": finding.get("path") or finding.get("file"),
-                "action": finding.get("action") or "Update the affected API usage and re-run the audit.",
+        sev = str(issue.get("severity", "")).upper()
+        if sev in {"CRITICAL", "BLOCKER", "HIGH"}:
+            findings.append({
+                "category": "security" if "credential" in str(issue.get("title", "")).lower() else "technical",
+                "title": issue.get("title", "Technical issue"), "severity": sev,
+                "path": issue.get("path"), "message": issue.get("message"),
+                "evidence": issue.get("evidence")
             })
-
-    for dep in report.get("dependencies", []):
-        name = dep.get("name", "")
-        if name not in CRITICAL_COORDINATES:
+    for group, items in (report.get("api_findings") or {}).items():
+        if group == "namespaceMigration":
             continue
-        current = dep.get("version")
-        recommended = dep.get("recommended_version")
-        if not current or current == "Not resolved":
-            continue
-        critical_dependencies.append({
-            "name": name,
-            "current_version": current,
-            "recommended_version": recommended,
-            "severity": "CRITICAL" if dep.get("version_status") in {"MAJOR_UPDATE_AVAILABLE", "NEEDS_CHANGES"} else "HIGH",
-            "build_failure_risk": dep.get("version_status") in {"MAJOR_UPDATE_AVAILABLE", "NEEDS_CHANGES"},
-            "source_changes_required": name == "io.jsonwebtoken:jjwt" or "javax." in name,
-            "action": _dependency_action(dep),
-        })
-
-    for framework in report.get("frameworks", []):
-        if framework.get("name") not in CRITICAL_FRAMEWORKS:
-            continue
-        status = framework.get("version_status")
-        if status not in {"MAJOR_UPDATE_AVAILABLE", "NEEDS_CHANGES"}:
-            continue
-        framework_migrations.append({
-            "name": framework.get("name"),
-            "current_version": framework.get("version"),
-            "recommended_version": framework.get("recommended_version"),
-            "severity": "CRITICAL",
-            "build_failure_risk": True,
-            "source_changes_required": True,
-            "action": "Align this framework with the selected Spring/Java generation; inspect API and configuration changes before upgrading.",
-        })
-
-    def unique(items):
-        seen = set()
-        result = []
-        for item in items:
-            key = repr(sorted(item.items()))
-            if key not in seen:
-                seen.add(key)
-                result.append(item)
-        return result
-
-    build_blockers = unique(build_blockers)
-    critical_dependencies = unique(critical_dependencies)
-    framework_migrations = unique(framework_migrations)
-    api_findings = unique(api_findings)
-
-    # Build a real migration checklist from the same findings already present in
-    # the report. This avoids a second scan and keeps the checklist consistent.
-    migration_required = []
-    if build_blockers:
-        for blocker in build_blockers:
-            if blocker.get("component") == "Java":
-                action = _migration_action(blocker, "java")
-                if action:
-                    migration_required.append(action)
-
-    for dependency in critical_dependencies:
-        action = _migration_action(dependency, "dependency")
-        if action:
-            migration_required.append(action)
-
-    for framework in framework_migrations:
-        action = _migration_action(framework, "framework")
-        if action:
-            migration_required.append(action)
-
-    for finding in api_findings:
-        action = _migration_action(finding, "api")
-        if action:
-            migration_required.append(action)
-
-    # Preserve order while removing duplicate migration tasks by ID.
-    seen_ids = set()
-    migration_required = [
-        item for item in migration_required
-        if not (item["id"] in seen_ids or seen_ids.add(item["id"]))
-    ]
-
+        for item in items or []:
+            sev = str(item.get("severity", "")).upper()
+            if sev not in {"CRITICAL", "BLOCKER", "HIGH"}:
+                continue
+            findings.append({
+                "category": group, "title": item.get("ruleId", "API finding"),
+                "severity": sev, "path": item.get("path") or item.get("file"),
+                "locations": item.get("locations", []),
+                "message": item.get("message") or item.get("description") or item.get("replacement"),
+                "recommendation": item.get("replacement") or item.get("suggestedAlternative")
+            })
+    for item in report.get("security_findings", []):
+        sev = str(item.get("severity", "")).upper()
+        if sev in {"CRITICAL", "BLOCKER", "HIGH"}:
+            findings.append({
+                "category": "security", "title": item.get("id", "Security finding"),
+                "severity": sev, "path": item.get("path"), "line": item.get("line"),
+                "evidence": item.get("evidence"), "recommendation": item.get("recommendation")
+            })
+    unique = {}
+    for item in findings:
+        key = (item.get("category"), item.get("title"), item.get("path"), item.get("line"), repr(item.get("locations")))
+        unique[key] = item
+    findings = sorted(unique.values(), key=lambda x: ({"CRITICAL":0,"BLOCKER":1,"HIGH":2}.get(x.get("severity"),3), str(x.get("path") or ""), str(x.get("title") or "")))
+    compatibility = []
+    for module in report.get("modules", []):
+        current, target = str(module.get("java_version", "")), str(report.get("target_java", ""))
+        if current.isdigit() and target.isdigit() and int(current) < int(target):
+            compatibility.append({
+                "category": "target_java_baseline", "severity": "INFO",
+                "module": module.get("path"), "current_java": current,
+                "requested_target_java": target,
+                "message": "Older than the requested comparison target; this alone does not mean the current build is broken."
+            })
     return {
-        "report_type": "critical_migration_only",
+        "report_type": "critical_technical_findings",
         "auditor_version": report.get("auditor_version"),
         "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
-        "project_name": report.get("project_name"),
-        "build_system": report.get("build_system"),
-        "current_java": current_java,
-        "target_java": target_java,
+        "project_name": report.get("project_name"), "build_system": report.get("build_system"),
+        "current_java": report.get("current_java"),
         "summary": {
-            "build_blockers": len(build_blockers),
-            "critical_dependencies": len(critical_dependencies),
-            "framework_migrations": len(framework_migrations),
-            "api_findings": len(api_findings),
-            "migration_required": len(migration_required),
-            "routine_dependencies_excluded": max(
-                0,
-                report.get("scan_summary", {}).get("dependencies_detected", 0)
-                - len(critical_dependencies),
-            ),
+            "critical_findings": sum(x["severity"] == "CRITICAL" for x in findings),
+            "blocker_findings": sum(x["severity"] == "BLOCKER" for x in findings),
+            "high_findings": sum(x["severity"] == "HIGH" for x in findings),
+            "compatibility_notes": len(compatibility)
         },
-        "build_blockers": build_blockers,
-        "critical_dependencies": critical_dependencies,
-        "framework_migrations": framework_migrations,
-        "api_findings": api_findings,
-        "migration_required": migration_required,
-        "note": "This report intentionally excludes routine dependency updates and transitive dependencies unless they are associated with a known build or migration risk. The full output.json remains the detailed audit.",
+        "findings": findings, "compatibility_notes": compatibility,
+        "note": "Only evidenced technical risks are included. A requested target Java version or javax-to-jakarta difference is not a current build blocker by itself. An available dependency update is not proof of a vulnerability."
     }
