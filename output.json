@@ -1,6 +1,6 @@
 {
-  "auditor_version": "4.1",
-  "generated_at": "2026-11-04T09:35:31+00:00",
+  "auditor_version": "4.2",
+  "generated_at": "2026-11-04T11:56:56+00:00",
   "project_path": "/mnt/MyDocuments/Java-Project/Java_Full_Stack_Project",
   "project_name": "Java_Full_Stack_Project",
   "build_system": "Maven",
@@ -11,11 +11,11 @@
     "build_files_found": 1,
     "modules_analyzed": 1,
     "dependencies_detected": 13,
-    "dependencies_with_updates": 10,
+    "dependencies_with_updates": 11,
     "dependency_status_counts": {
       "CURRENT": 1,
-      "NEEDS_UPDATE": 10,
-      "VERSION_UNRESOLVED": 2
+      "NEEDS_UPDATE": 11,
+      "VERSION_UNRESOLVED": 1
     },
     "frameworks_detected": 1,
     "frameworks_reported": 1,
@@ -80,14 +80,14 @@
     },
     {
       "name": "org.mongodb:mongodb-driver-sync",
-      "version": "Not resolved",
+      "version": "4.6.1",
       "scope": "compile",
       "type": "direct",
-      "version_source": "inherited or BOM-managed",
+      "version_source": "local dependencyManagement",
       "module": "backend",
-      "latest_version": "Unavailable",
-      "recommended_version": "Resolve version",
-      "version_status": "VERSION_UNRESOLVED"
+      "latest_version": "5.14.0",
+      "recommended_version": "4.11.5",
+      "version_status": "NEEDS_UPDATE"
     },
     {
       "name": "org.projectlombok:lombok",
@@ -116,7 +116,7 @@
       "version": "2.7.5",
       "scope": "compile",
       "type": "direct",
-      "version_source": "Spring Boot parent dependency management",
+      "version_source": "local dependencyManagement",
       "module": "backend",
       "latest_version": "4.1.2",
       "recommended_version": "2.7.18",
@@ -127,7 +127,7 @@
       "version": "2.7.5",
       "scope": "compile",
       "type": "direct",
-      "version_source": "Spring Boot parent dependency management",
+      "version_source": "local dependencyManagement",
       "module": "backend",
       "latest_version": "4.1.2",
       "recommended_version": "2.7.18",
@@ -138,7 +138,7 @@
       "version": "2.7.5",
       "scope": "compile",
       "type": "direct",
-      "version_source": "Spring Boot parent dependency management",
+      "version_source": "local dependencyManagement",
       "module": "backend",
       "latest_version": "4.1.2",
       "recommended_version": "2.7.18",
@@ -149,7 +149,7 @@
       "version": "2.7.5",
       "scope": "compile",
       "type": "direct",
-      "version_source": "Spring Boot parent dependency management",
+      "version_source": "local dependencyManagement",
       "module": "backend",
       "latest_version": "4.1.2",
       "recommended_version": "2.7.18",
@@ -160,7 +160,7 @@
       "version": "2.7.5",
       "scope": "test",
       "type": "direct",
-      "version_source": "Spring Boot parent dependency management",
+      "version_source": "local dependencyManagement",
       "module": "backend",
       "latest_version": "4.1.2",
       "recommended_version": "2.7.18",
@@ -171,7 +171,7 @@
       "version": "2.7.5",
       "scope": "compile",
       "type": "direct",
-      "version_source": "Spring Boot parent dependency management",
+      "version_source": "local dependencyManagement",
       "module": "backend",
       "latest_version": "4.1.2",
       "recommended_version": "2.7.18",
@@ -196,7 +196,7 @@
     "namespaceMigration": [
       {
         "ruleId": "NS-PERSISTENCE",
-        "severity": "BLOCKER",
+        "severity": "MEDIUM",
         "from": "javax.persistence.*",
         "to": "jakarta.persistence.*",
         "filesAffected": 3,
@@ -216,7 +216,7 @@
       },
       {
         "ruleId": "NS-SERVLET",
-        "severity": "BLOCKER",
+        "severity": "MEDIUM",
         "from": "javax.servlet.*",
         "to": "jakarta.servlet.*",
         "filesAffected": 1,
@@ -236,10 +236,10 @@
   },
   "issues": [
     {
-      "title": "Dependency version unresolved",
-      "severity": "MEDIUM",
-      "path": "backend/pom.xml",
-      "message": "The version for org.mongodb:mongodb-driver-sync could not be resolved from the build files or dependency tree."
+      "title": "Potential hardcoded credential",
+      "severity": "HIGH",
+      "path": "backend/src/main/resources/application.properties",
+      "message": "HARDCODED_PASSWORD assignment detected; value redacted"
     },
     {
       "title": "Dependency version unresolved",
@@ -268,6 +268,13 @@
       "module": "backend",
       "current_version": "0.9.1",
       "recommended_version": "0.13.0",
+      "reason": "A newer stable release is available in the current major line."
+    },
+    {
+      "component": "org.mongodb:mongodb-driver-sync",
+      "module": "backend",
+      "current_version": "4.6.1",
+      "recommended_version": "4.11.5",
       "reason": "A newer stable release is available in the current major line."
     },
     {
@@ -327,52 +334,20 @@
       "reason": "A newer stable release is available in the current major line."
     }
   ],
-  "migration": {
-    "target_java": "21",
-    "summary": {
-      "readiness_score": 52,
-      "readiness_level": "NEEDS_SIGNIFICANT_WORK",
-      "counts": {
-        "BLOCKER": 2,
-        "HIGH": 0,
-        "MEDIUM": 12,
-        "LOW": 0
-      }
-    },
-    "plan": [
-      {
-        "step": 1,
-        "action": "Raise the Java baseline to 21 and add replacement libraries for removed JDK modules",
-        "refs": [
-          "java_version"
-        ]
-      },
-      {
-        "step": 2,
-        "action": "Run the javax.* to jakarta.* namespace migration (e.g. OpenRewrite) and upgrade the frameworks that require it",
-        "refs": [
-          "NS-PERSISTENCE",
-          "NS-SERVLET"
-        ]
-      },
-      {
-        "step": 3,
-        "action": "Upgrade other outdated libraries, replace end-of-life ones and resolve version conflicts",
-        "refs": [
-          "component:com.mysql:mysql-connector-j",
-          "component:io.jsonwebtoken:jjwt",
-          "component:org.projectlombok:lombok",
-          "component:org.springdoc:springdoc-openapi-ui",
-          "component:org.springframework.boot:spring-boot-devtools",
-          "component:org.springframework.boot:spring-boot-starter-data-jpa",
-          "component:org.springframework.boot:spring-boot-starter-data-mongodb",
-          "component:org.springframework.boot:spring-boot-starter-security",
-          "component:org.springframework.boot:spring-boot-starter-test",
-          "component:org.springframework.boot:spring-boot-starter-web",
-          "component:Spring Boot"
-        ]
-      }
-    ]
+  "security_findings": [
+    {
+      "id": "HARDCODED_PASSWORD",
+      "severity": "HIGH",
+      "path": "backend/src/main/resources/application.properties",
+      "line": 13,
+      "evidence": "HARDCODED_PASSWORD assignment detected; value redacted",
+      "recommendation": "Move the credential to a secret manager or environment variable; rotate it if committed."
+    }
+  ],
+  "vulnerability_scan": {
+    "provider": "OSV",
+    "status": "SKIPPED_INTERNAL",
+    "message": null
   },
   "analysis_notes": [
     "No application runtime checks or build/test validation are performed.",
