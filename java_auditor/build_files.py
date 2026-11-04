@@ -14,7 +14,7 @@ from .utils import (
 
 def _local_boot_managed_versions(version):
     """Read Spring Boot's cached dependency BOM when available (offline-safe)."""
-    if not version or PLACEHOLDER_START in str(version):
+    if not version or "${" in str(version):
         return {}
     bom = Path.home() / ".m2" / "repository" / "org" / "springframework" / "boot" / "spring-boot-dependencies" / str(version) / f"spring-boot-dependencies-{version}.pom"
     if not bom.is_file():
