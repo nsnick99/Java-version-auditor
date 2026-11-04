@@ -8,7 +8,8 @@ from pathlib import Path
 from .build_files import read_ant, read_gradle, read_pom
 from .config import AUDITOR_VERSION, BUILD_NAMES, MINIMUM_JAVA_VERSION, SETTINGS_NAMES, TARGET_JAVA
 from .source_api_scanner import scan_project_apis
-from .security_scanner import scan_secrets
+from .security_scanner import scan_secrets, scan_dependency_vulnerabilities
+import java_auditor.dependency_resolver as dependency_resolver
 from .dependency_resolver import merge_dependencies, resolve_dependency_tree, resolve_maven_updates
 from .project_scanner import detect_missing_gradle_modules, scan_deprecated_apis
 from .utils import find_files, java_major, progress, rel, version_sort_key, version_tuple
@@ -267,6 +268,19 @@ def build_report(project_path, target_java=TARGET_JAVA):
 
     # Detect likely hardcoded credentials independently of dependency metadata.
     security_findings = scan_secrets(root)
+    if dependency_resolver.RESOLUTION_MODE == "normal":
+        osv_result = scan_dependency_vulnerabilities(dependencies)
+    else:
+        osv_result = {"status": "SKIPPED_" + dependency_resolver.RESOLUTION_MODE.upper(), "findings": []}
+    security_findings.extend(osv_result.get("findings", []))
+    for vulnerability in osv_result.get("findings", []):
+        if vulnerability.get("severity") in {"CRITICAL", "HIGH"}:
+            issues.append({
+                "title": "Known dependency vulnerability",
+                "severity": vulnerability["severity"],
+                "path": None,
+                "message": f"{vulnerability.get('id')} affects {vulnerability.get('package')} {vulnerability.get('version')}: {vulnerability.get('summary') or 'See OSV advisory.'}",
+            })
     for finding in security_findings:
         issues.append({
             "title": "Potential hardcoded credential",
@@ -331,6 +345,7 @@ def build_report(project_path, target_java=TARGET_JAVA):
         "issues": issues,
         "recommendations": recommendations,
         "security_findings": security_findings,
+        "vulnerability_scan": {"provider": "OSV", "status": osv_result.get("status"), "message": osv_result.get("message")},
         "analysis_notes": [
             "No application runtime checks or build/test validation are performed.",
             "All detected dependencies and frameworks are retained in the report even when version metadata is unavailable; CHECK_UNAVAILABLE means the component was found but its remote version check could not be completed.",
