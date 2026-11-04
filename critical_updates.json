@@ -1,103 +1,36 @@
 {
-  "report_type": "critical_migration_only",
-  "auditor_version": "4.1",
-  "generated_at": "2026-11-04T09:35:32+00:00",
+  "report_type": "critical_technical_findings",
+  "auditor_version": "4.2",
+  "generated_at": "2026-11-04T11:56:56+00:00",
   "project_name": "Java_Full_Stack_Project",
   "build_system": "Maven",
   "current_java": "11",
-  "target_java": "21",
   "summary": {
-    "build_blockers": 1,
-    "critical_dependencies": 1,
-    "framework_migrations": 0,
-    "api_findings": 2,
-    "migration_required": 4,
-    "routine_dependencies_excluded": 12
+    "critical_findings": 0,
+    "blocker_findings": 0,
+    "high_findings": 1,
+    "compatibility_notes": 1
   },
-  "build_blockers": [
+  "findings": [
     {
-      "component": "Java",
-      "current_version": "11",
-      "target_version": "21",
-      "severity": "CRITICAL",
-      "build_failure_risk": true,
-      "source_changes_required": false,
-      "action": "Update Maven/Gradle compiler configuration to Java 21 and verify JDK API compatibility."
-    }
-  ],
-  "critical_dependencies": [
-    {
-      "name": "io.jsonwebtoken:jjwt",
-      "current_version": "0.9.1",
-      "recommended_version": "0.13.0",
+      "category": "security",
+      "title": "HARDCODED_PASSWORD",
       "severity": "HIGH",
-      "build_failure_risk": false,
-      "source_changes_required": true,
-      "action": "Upgrade JJWT and verify/migrate JWT parsing, signing, and claims APIs."
+      "path": "backend/src/main/resources/application.properties",
+      "line": 13,
+      "evidence": "HARDCODED_PASSWORD assignment detected; value redacted",
+      "recommendation": "Move the credential to a secret manager or environment variable; rotate it if committed."
     }
   ],
-  "framework_migrations": [],
-  "api_findings": [
+  "compatibility_notes": [
     {
-      "category": "namespaceMigration",
-      "rule_id": "NS-PERSISTENCE",
-      "severity": "BLOCKER",
-      "message": null,
-      "path": null,
-      "action": "Update the affected API usage and re-run the audit."
-    },
-    {
-      "category": "namespaceMigration",
-      "rule_id": "NS-SERVLET",
-      "severity": "BLOCKER",
-      "message": null,
-      "path": null,
-      "action": "Update the affected API usage and re-run the audit."
+      "category": "target_java_baseline",
+      "severity": "INFO",
+      "module": "backend",
+      "current_java": "11",
+      "requested_target_java": "21",
+      "message": "Older than the requested comparison target; this alone does not mean the current build is broken."
     }
   ],
-  "migration_required": [
-    {
-      "id": "JAVA-TARGET",
-      "category": "java",
-      "component": "Java",
-      "severity": "CRITICAL",
-      "current_version": "11",
-      "target_version": "21",
-      "build_failure_risk": true,
-      "source_changes_required": false,
-      "action": "Update Maven/Gradle compiler configuration to Java 21 and verify JDK API compatibility."
-    },
-    {
-      "id": "DEPENDENCY-io.jsonwebtoken:jjwt",
-      "category": "dependency",
-      "component": "io.jsonwebtoken:jjwt",
-      "severity": "HIGH",
-      "current_version": "0.9.1",
-      "target_version": "0.13.0",
-      "build_failure_risk": false,
-      "source_changes_required": true,
-      "action": "Upgrade JJWT and verify/migrate JWT parsing, signing, and claims APIs."
-    },
-    {
-      "id": "API-NS-PERSISTENCE",
-      "category": "api",
-      "component": "NS-PERSISTENCE",
-      "severity": "BLOCKER",
-      "build_failure_risk": true,
-      "source_changes_required": true,
-      "path": null,
-      "action": "Update the affected API usage and re-run the audit."
-    },
-    {
-      "id": "API-NS-SERVLET",
-      "category": "api",
-      "component": "NS-SERVLET",
-      "severity": "BLOCKER",
-      "build_failure_risk": true,
-      "source_changes_required": true,
-      "path": null,
-      "action": "Update the affected API usage and re-run the audit."
-    }
-  ],
-  "note": "This report intentionally excludes routine dependency updates and transitive dependencies unless they are associated with a known build or migration risk. The full output.json remains the detailed audit."
+  "note": "Only evidenced technical risks are included. A requested target Java version or javax-to-jakarta difference is not a current build blocker by itself. An available dependency update is not proof of a vulnerability."
 }
