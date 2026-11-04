@@ -4,11 +4,35 @@ from __future__ import annotations
 
 import re
 import xml.etree.ElementTree as ET
+from pathlib import Path
 
 from .utils import (
     child, clean, interpolate, java_major, local_name, node_text, rel,
     resolve_path_expression,
 )
+
+
+def _local_boot_managed_versions(version):
+    """Read Spring Boot's cached dependency BOM when available (offline-safe)."""
+    if not version or PLACEHOLDER_START in str(version):
+        return {}
+    bom = Path.home() / ".m2" / "repository" / "org" / "springframework" / "boot" / "spring-boot-dependencies" / str(version) / f"spring-boot-dependencies-{version}.pom"
+    if not bom.is_file():
+        return {}
+    try:
+        document = ET.parse(bom).getroot()
+        dm = child(document, "dependencyManagement")
+        deps = child(dm, "dependencies")
+        result = {}
+        for dep in list(deps or []):
+            if local_name(dep) != "dependency":
+                continue
+            group, artifact, dep_version = node_text(dep, "groupId"), node_text(dep, "artifactId"), node_text(dep, "version")
+            if group and artifact and dep_version:
+                result[(group, artifact)] = dep_version.strip()
+        return result
+    except (OSError, ET.ParseError):
+        return {}
 
 
 def read_pom(pom, root):
@@ -64,6 +88,13 @@ def read_pom(pom, root):
             managed[(g, a)] = v
         if g == "org.springframework.boot" and a == "spring-boot-dependencies" and v:
             info["boot_versions"].append({"version": v, "source": f"{rel(pom, root)}:dependencyManagement.spring-boot-dependencies"})
+
+    # The Spring Boot starter parent inherits its managed versions from the
+    # spring-boot-dependencies BOM. Resolve those versions from the local Maven
+    # cache without forcing a network build or guessing a version.
+    if inherited_boot_version:
+        for coordinate, managed_version in _local_boot_managed_versions(inherited_boot_version).items():
+            managed.setdefault(coordinate, managed_version)
 
     for dep in list(child(document, "dependencies") or []):
         if local_name(dep) != "dependency":
