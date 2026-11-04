@@ -265,15 +265,6 @@ def build_report(project_path, target_java=TARGET_JAVA):
     issues.sort(key=lambda x: (severity_rank.get(x.get("severity"), 3), x.get("title", ""), x.get("path") or ""))
     recommendations.sort(key=lambda x: (str(x.get("module")), x["component"]))
 
-    progress("Running rule-based API scan and building the migration plan...")
-    api_findings, api_scan = scan_project_apis(root, target_java)
-    java_gap = None
-    for module in module_details:
-        detected = java_major(module["java_version"]) if module["java_version"] not in {"Not detected", "Multiple"} else None
-        if detected and detected.isdigit() and int(detected) < target_java:
-            java_gap = {"current": detected, "target": str(target_java)}
-            break
-
     # Detect likely hardcoded credentials independently of dependency metadata.
     security_findings = scan_secrets(root)
     for finding in security_findings:
