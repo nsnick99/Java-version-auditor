@@ -21,6 +21,8 @@ def _local_boot_managed_versions(version):
         return {}
     try:
         document = ET.parse(bom).getroot()
+        props_node = child(document, "properties")
+        properties = {local_name(x): (x.text or "").strip() for x in list(props_node or []) if x.text}
         dm = child(document, "dependencyManagement")
         deps = child(dm, "dependencies")
         result = {}
@@ -28,8 +30,9 @@ def _local_boot_managed_versions(version):
             if local_name(dep) != "dependency":
                 continue
             group, artifact, dep_version = node_text(dep, "groupId"), node_text(dep, "artifactId"), node_text(dep, "version")
-            if group and artifact and dep_version:
-                result[(group, artifact)] = dep_version.strip()
+            resolved_version = interpolate(dep_version, properties) if dep_version else None
+            if group and artifact and resolved_version:
+                result[(group, artifact)] = resolved_version
         return result
     except (OSError, ET.ParseError):
         return {}
