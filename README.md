@@ -1,6 +1,6 @@
 # Java Version Auditor
 
-One command audits a Java project directory **or a packaged `.war/.jar/.ear/.zip`** and writes `output.json`. The report focuses on actionable Java-version, dependency, API, packaging and migration findings.
+One command audits a Java project directory **or a packaged `.war/.jar/.ear/.zip`** and writes `output.json`. The report focuses on Java-version compatibility, dependency intelligence, API usage, security signals and packaging findings.
 
 ## Run
 
@@ -76,6 +76,7 @@ Internal Maven results distinguish `FOUND`, `NOT_FOUND`, `AUTH_REQUIRED`, `TIMEO
 - Missing declared modules/files
 - Selected deprecated API usage
 - Framework compatibility recommendations
+- Conservative hardcoded-secret detection in project configuration files
 - Requested target-Java compatibility
 
 ### WAR/JAR/EAR/ZIP packages
@@ -89,7 +90,6 @@ Internal Maven results distinguish `FOUND`, `NOT_FOUND`, `AUTH_REQUIRED`, `TIMEO
 - `javax.*` to `jakarta.*` namespace usage
 - Referenced configuration files that are missing
 - Java baseline gap versus the requested target
-- Migration readiness score and ordered migration plan
 
 ## Code structure
 
@@ -102,6 +102,7 @@ Internal Maven results distinguish `FOUND`, `NOT_FOUND`, `AUTH_REQUIRED`, `TIMEO
 - `java_auditor/internal_maven.py` — internal Maven metadata lookup and diagnostics
 - `java_auditor/version_checker.py` — version metadata and stable upgrade advice
 - `java_auditor/project_scanner.py` — project completeness/deprecated API checks
+- `java_auditor/security_scanner.py` — redacted hardcoded-secret detection
 - `java_auditor/report_builder.py` — project-directory report orchestration
 - `java_auditor/artifact_report.py` — packaged-application report orchestration
 - `java_auditor/artifact_build.py` — packaged build/Java/version detection
@@ -109,7 +110,6 @@ Internal Maven results distinguish `FOUND`, `NOT_FOUND`, `AUTH_REQUIRED`, `TIMEO
 - `java_auditor/archive_source.py` — archive reader
 - `java_auditor/classfile.py` — lightweight `.class` parser
 - `java_auditor/bytecode_scanner.py` — bytecode compatibility and reference scanning
-- `java_auditor/migration.py` — readiness score and ordered migration plan
 - `java_auditor/rules/*.json` — data-driven compatibility and library rules
 
 No third-party Python packages are required. Maven or Gradle is used only when available and appropriate for normal-mode project dependency/version information; packaged-application mode can operate without them.
